@@ -3,6 +3,7 @@ package werewolves.connect;
 import android.annotation.SuppressLint;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -57,6 +58,10 @@ public class GameActivity extends AppCompatActivity{
         createPlayersCards();
     }
 
+    public void setGame( Game g ){
+        this.game = g;
+    }
+
 
     //----------- Create Game Layout --------------
     public void createTableCards(){
@@ -80,7 +85,7 @@ public class GameActivity extends AppCompatActivity{
 
         playersCards.setSize( p );
         knownCards.setSize( p + 3 );
-//        knownCards.forEach( ( knownCard ) -> knownCard = "" );
+//        for( String s : knownCards ) s = null;
 //        int ourPos = game.players.indexOf( game.nickname );        //start drawing cards from ours
         yourCardPos = 3;
         Button button = getCard( "Your card" );
@@ -90,6 +95,7 @@ public class GameActivity extends AppCompatActivity{
         int x = ( int ) ( a * Math.cos( ti ) + ( sceneWidth / 2.0 ) - ( cardWidth / 2.0 ) );
         int y = ( int ) ( -1 * ( b * Math.sin( ti ) ) + ( sceneHeight / 2.0 ) - ( cardHeight / 2.0 ) );
 //        button.setOpacity( 1.0 );
+        button.setAlpha( INACTIVE_OPACITY );        // TODO to 1.f
         playersCards.set( yourCardPos, button );
         placeCard( button, x, y );
 
@@ -140,13 +146,23 @@ public class GameActivity extends AppCompatActivity{
         cardWidth = getPx( cardWidth );
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics( displayMetrics );
-        sceneWidth = displayMetrics.heightPixels;
-        sceneHeight = displayMetrics.widthPixels - getPx( 40 );
+        sceneHeight = displayMetrics.heightPixels;
+        sceneWidth = displayMetrics.widthPixels - getPx( 40 );
+        if( sceneHeight > sceneWidth ){
+            int t = sceneHeight;
+            sceneHeight = sceneWidth;
+            sceneWidth = t;
+        }
+
     }
 
     //------------- HELP -----------------
     private int getPx( int dp ){
         return ( int ) TypedValue.applyDimension( TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics() );
+    }
+
+    private int getDrawableId( String name ){
+        return getResources().getIdentifier( name, "drawable", getPackageName() );
     }
 
     //------------- Set GUI fields -------------
@@ -172,9 +188,88 @@ public class GameActivity extends AppCompatActivity{
             if( i != yourCardPos ){
                 button.setEnabled( active );
                 if( reverseCardsSwitch.isChecked() || knownCards.get( playersCards.indexOf( button ) ) == null )
-                    button.getBackground().setAlpha( active ? 255 : 127 );
+                    button.setAlpha( active ? 1.f : INACTIVE_OPACITY );
             }
             ++i;
+        }
+    }
+
+    public void setPlayerCardActive( int playerIndex, boolean active ){
+        playersCards.get( playerIndex ).setEnabled( active );
+        if( reverseCardsSwitch.isChecked() || knownCards.get( playerIndex ) == null )
+            playersCards.get( playerIndex ).setAlpha( active ? 1.f : INACTIVE_OPACITY );
+    }
+
+    public void setTableCardsActive( boolean active ){
+        card0.setEnabled( active );
+        card1.setEnabled( active );
+        card2.setEnabled( active );
+        if( reverseCardsSwitch.isChecked() || knownCards.get( knownCards.size() - 3 ) == null ) card0.setAlpha( active ? 1.f : INACTIVE_OPACITY );
+        if( reverseCardsSwitch.isChecked() || knownCards.get( knownCards.size() - 2 ) == null ) card1.setAlpha( active ? 1.f : INACTIVE_OPACITY );
+        if( reverseCardsSwitch.isChecked() || knownCards.get( knownCards.size() - 1 ) == null ) card2.setAlpha( active ? 1.f : INACTIVE_OPACITY );
+    }
+
+    public void hideCenterCard( String card ){
+        Button btn;
+        int idx;
+        switch( card ){
+            case ( char )2 + "card0": btn = card0; idx = knownCards.size() - 3; break;
+            case ( char )2 + "card1": btn = card1; idx = knownCards.size() - 2; break;
+            case ( char )2 + "card2": btn = card2; idx = knownCards.size() - 1; break;
+            default: return;
+        }
+        btn.setBackgroundResource( R.drawable.backcardsmall );
+        btn.setAlpha( INACTIVE_OPACITY );
+        knownCards.set( idx, null );
+    }
+
+    public void updateMyCard( String card ){
+        Button btn = playersCards.get( game.players.indexOf( game.nickname ) );
+        game.displayedCard = card;
+        runOnUiThread( () -> btn.setBackgroundResource( getDrawableId( "frontcardbig" + card.split( " " )[ 0 ]  ) ) );
+    }
+
+    public void reverseCard( String player, String card ){
+        Button btn;
+        int idx;
+        switch( player ){
+            case ( char )2 + "card0": btn = card0; idx = knownCards.size() - 3; break;
+            case ( char )2 + "card1": btn = card1; idx = knownCards.size() - 2; break;
+            case ( char )2 + "card2": btn = card2; idx = knownCards.size() - 1; break;
+            default: idx = game.players.indexOf( player ); btn = playersCards.get( idx );
+        }
+        knownCards.set( idx, card );
+        runOnUiThread( () -> {
+            if( !reverseCardsSwitch.isEnabled() )
+                reverseCardsSwitch.setEnabled( true );
+            runOnUiThread( () -> btn.setBackgroundResource( getDrawableId( "frontcardbig" + card.split( " " )[ 0 ]  ) ) );
+            btn.setAlpha( 1.0f );
+        } );
+    }
+
+    public void hideShowCardNames(){
+        if( reverseCardsSwitch.isChecked() ){
+            card0.setBackgroundResource( R.drawable.backcardsmall );
+            card1.setBackgroundResource( R.drawable.backcardsmall );
+            card2.setBackgroundResource( R.drawable.backcardsmall );
+            if( !card0.isEnabled() ) card0.setAlpha( INACTIVE_OPACITY );
+            if( !card1.isEnabled() ) card1.setAlpha( INACTIVE_OPACITY );
+            if( !card2.isEnabled() ) card2.setAlpha( INACTIVE_OPACITY );
+            for( int i = 0; i < playersCards.size(); ++i ){
+                if( knownCards.get( i ) != null ){
+                    playersCards.get( i ).setBackgroundResource( R.drawable.backcardsmall );
+                    if( !playersCards.get( i ).isEnabled() ) playersCards.get( i ).setAlpha( INACTIVE_OPACITY );
+                }
+            }
+        } else{
+            for( int i = 0; i < playersCards.size(); ++i ){
+                if( knownCards.get( i ) != null )
+                    reverseCard( game.players.get( i ), knownCards.get( i ) );
+            }
+            for( int i = playersCards.size(), j = 0; i < knownCards.size(); ++i, ++j ){
+                if( knownCards.get( i ) != null )
+                    reverseCard( Game.UNIQUE_CHAR + "card" + j, knownCards.get( i ) );
+            }
         }
     }
 
@@ -186,6 +281,7 @@ public class GameActivity extends AppCompatActivity{
     private Button card0, card1, card2;
     private String card0id, card1id, card2id;
     private Vector< Button > playersCards = new Vector<>();
+    private Vector< ButtonAttr > cardsAttr = new Vector<>();
     private int yourCardPos;
 //    private Vector< Line > lines = new Vector<>();
     public Vector< String > knownCards = new Vector<>();
@@ -199,4 +295,10 @@ public class GameActivity extends AppCompatActivity{
     private static int cardHeight = ( int ) ( 100 * 0.8 );
     private static int cardWidth = ( int ) ( 72 * 0.8 );
     private static int buttonTextSize = 10;
+    private final static float INACTIVE_OPACITY = 0.5f;
+    private Game game;
+
+    private class ButtonAttr{
+        public boolean selected = false;
+    }
 }
