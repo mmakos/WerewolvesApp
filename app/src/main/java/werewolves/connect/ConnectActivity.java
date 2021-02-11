@@ -102,8 +102,6 @@ public class ConnectActivity extends AppCompatActivity{
             return;
         }
         Game game = new Game( login, gameIdField.getText().toString(), this );
-
-        //game.run( nicknameField.getScene().getWindow() );
     }
 
     public void info( String info ){

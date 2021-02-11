@@ -1,39 +1,31 @@
 package werewolves.connect;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
-import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.Layout;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.TypedValue;
-import android.view.OrientationEventListener;
-import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.ToggleButton;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import java.util.Objects;
 import java.util.Vector;
 
-public class GameActivity extends AppCompatActivity{
+public class GameActivity extends AppCompatActivity implements View.OnClickListener{
+
     @Override
     protected void onCreate( @Nullable Bundle savedInstanceState ){
         super.onCreate( savedInstanceState );
@@ -44,6 +36,9 @@ public class GameActivity extends AppCompatActivity{
             setRequestedOrientation( ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE );
         Objects.requireNonNull( getSupportActionBar() ).hide();
         setContentView( R.layout.game_activity );
+        Intent intent = getIntent();
+        game = ( Game ) intent.getSerializableExtra( "gameObject" );
+        game.setGameActivity( this );
 
         final DrawerLayout drawerLayout = findViewById( R.id.mainLayout );
         findViewById( R.id.menuArrow ).setOnClickListener( v -> drawerLayout.openDrawer( GravityCompat.START ) );
@@ -58,11 +53,6 @@ public class GameActivity extends AppCompatActivity{
         createPlayersCards();
     }
 
-    public void setGame( Game g ){
-        this.game = g;
-    }
-
-
     //----------- Create Game Layout --------------
     public void createTableCards(){
         card0 = getCard( "" );
@@ -75,9 +65,6 @@ public class GameActivity extends AppCompatActivity{
         card2 = getCard( "" );
         x = x + cardWidth;
         placeCard( card2, x, y );
-        card0id = Game.UNIQUE_CHAR + "card0";
-        card1id = Game.UNIQUE_CHAR + "card1";
-        card2id = Game.UNIQUE_CHAR + "card2";
     }
 
     public void createPlayersCards(){
@@ -96,7 +83,7 @@ public class GameActivity extends AppCompatActivity{
         int y = ( int ) ( -1 * ( b * Math.sin( ti ) ) + ( sceneHeight / 2.0 ) - ( cardHeight / 2.0 ) );
 //        button.setOpacity( 1.0 );
         button.setAlpha( INACTIVE_OPACITY );        // TODO to 1.f
-        playersCards.set( yourCardPos, button );
+        setCard( yourCardPos, button, Game.UNIQUE_CHAR + "You" );
         placeCard( button, x, y );
 
         int pos = 0;
@@ -106,13 +93,20 @@ public class GameActivity extends AppCompatActivity{
             addCard( pos, player, a, b, p );
     }
 
+    private void setCard( int position, Button button, String name ){
+        playersCards.set( position, button );
+        cardsAttr.set( position, new ButtonAttr( button.getId(), name ) );
+    }
+
     private void addCard( int pos, int player, int a, int b, int p ){
-        // ToggleButton toggle = getPlayerCard( game.players.get( player ) );
-        Button button = getCard( "player" + player );
+        String nickname = "player" + player;
+//        String nickname = game.players.get( player );     TODO
+        Button button = getCard( nickname );
         double ti = Math.toRadians( -90 - ( 360.0 / p ) * ( pos + 1 ) - angleDiffFunction( pos + 1, p ) );
         int x = ( int ) ( a * Math.cos( ti ) + ( sceneWidth / 2.0 ) - ( cardWidth / 2.0 ) );
         int y = ( int ) ( -1 * ( b * Math.sin( ti ) ) + ( sceneHeight / 2.0 ) - ( cardHeight / 2.0 ) );
         playersCards.set( player, button );
+        setCard( player, button, nickname );
         placeCard( button, x, y );
     }
 
@@ -137,7 +131,7 @@ public class GameActivity extends AppCompatActivity{
         button.setPadding( 0, 0, 0, ( int ) ( cardHeight * 0.7 ) );
         button.setEnabled( false );
         button.setBackgroundResource( R.drawable.backcardsmall );
-
+        button.setOnClickListener( this );
         return button;
     }
 
@@ -163,6 +157,14 @@ public class GameActivity extends AppCompatActivity{
 
     private int getDrawableId( String name ){
         return getResources().getIdentifier( name, "drawable", getPackageName() );
+    }
+
+    private String getButtonName( int id ){
+        for( ButtonAttr ba : cardsAttr ){
+            if( ba.id == id )
+                return ba.name;
+        }
+        return null;
     }
 
     //------------- Set GUI fields -------------
@@ -273,13 +275,28 @@ public class GameActivity extends AppCompatActivity{
         }
     }
 
+    @Override
+    public void onClick( View v ){
+        int btnId = v.getId();
+        String card;
+        if( btnId == card0.getId() )
+            card = Game.UNIQUE_CHAR + "card0";
+        else if( btnId == card1.getId() )
+            card = Game.UNIQUE_CHAR + "card1";
+        else if( btnId == card2.getId() )
+            card = Game.UNIQUE_CHAR + "card2";
+        else
+            card = getButtonName( btnId );
+        if( card != null )
+            this.game.setClickedCard( card );
+    }
+
 //    @FXML private AnchorPane gamePane;
 //    @FXML private MediaView video;
     private RelativeLayout gameArea;
     @SuppressLint( "UseSwitchCompatOrMaterialCode" )
     private Switch reverseCardsSwitch;
     private Button card0, card1, card2;
-    private String card0id, card1id, card2id;
     private Vector< Button > playersCards = new Vector<>();
     private Vector< ButtonAttr > cardsAttr = new Vector<>();
     private int yourCardPos;
@@ -289,8 +306,6 @@ public class GameActivity extends AppCompatActivity{
     private TextView currentRoleLabel;
     private TextView nicknameLabel;
     private TextView roleDescLabel;
-//    @FXML private Button reverseCardButton;
-//    @FXML public Button quitButton;
     private static int sceneWidth, sceneHeight;
     private static int cardHeight = ( int ) ( 100 * 0.8 );
     private static int cardWidth = ( int ) ( 72 * 0.8 );
@@ -299,6 +314,11 @@ public class GameActivity extends AppCompatActivity{
     private Game game;
 
     private class ButtonAttr{
-        public boolean selected = false;
+        public int id;
+        public String name;
+        ButtonAttr( int id, String name ){
+            this.id = id;
+            this.name = name;
+        }
     }
 }
