@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Werewolves</string>
+    <string name="nicknameHint">Nickname</string>
+    <string name="gameIdHint">Game ID</string>
+    <string name="joinButtonText">Join</string>
+    <string name="werewolfHeadDesc">Werewolf head</string>
+</resources>
