@@ -1,15 +1,12 @@
 package werewolves.connect;
-
-import android.content.Intent;
 import android.os.AsyncTask;
+import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.Serializable;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -19,96 +16,74 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Game implements AsyncResponse, Serializable{
+public class Game{
     private final Object clickedLock = new Object();        // to synchronize clicked card moment
     private Boolean isClicked = false;
     private String clickedCard;
-    public static final String COM_SPLITTER = String.valueOf( ( char )28 );
-    public final static String MSG_SPLITTER = String.valueOf( ( char )29 );
-    public final static String UNIQUE_CHAR = String.valueOf( ( char )2 );
-    public final static int MAX_ROLE_TIME = 30;
-    private static final boolean minionWinsWhenHeDies = true;
-    public Vector< String > players = new Vector<>();
+    public static final transient String COM_SPLITTER = String.valueOf( ( char )28 );
+    public final static transient String MSG_SPLITTER = String.valueOf( ( char )29 );
+    public final static transient String UNIQUE_CHAR = String.valueOf( ( char )2 );
+    public final static transient int MAX_ROLE_TIME = 30;
+    private static final transient boolean minionWinsWhenHeDies = true;
+    public Vector< String > players;
     private String card;
     public String displayedCard;        // When you are copycat or paranormal then its value is different than card line above
     public String nickname;
-    public String gameID;
-    public String[] statements = new String[ 50 ];
+    public String[] statements = { "wakes up",
+            "wakes up - YOUR TURN",
+            "Vote",
+            "You became",
+            "you've been touched",
+            "Thing touches you",
+            "Vote again, decision must be unequivocal",
+            "You have been killed",
+            "has been killed",
+            "tanner wins",
+            "city wins",
+            "werewolves win",
+            "werewolves and minion win",
+            "Time's up. Card will be randomly selected.",
+            "City wakes up!",
+            "Now you need to connect with other players via outer application, such as Zoom, to establish who is who. When you will be ready, admin will press 'start vote' button and you'll be able to make your vote on person, you wish to be dead.",
+            "Choose one card from the middle. From this moment you will become the card you chose.",
+            "On the top left corner you can see which card you were, and which card you are now.",
+            "You are the only werewolf. Select one card from the middle you wish to see.",
+            "Other werewolves are",
+            "There is no werewolves among the players.",
+            "Werewolves are",
+            "Choose one card to reverse",
+            "You can give a card from the middle to one of players. You will see this card. Choose one card from the middle and then select player whom you want to give this card to.",
+            "Now choose player.",
+            "You can swap players's cards. Choose two cards to swap.",
+            "Choose second player.",
+            "Choose other player's card. If it is tanner or werewolf, you became that card (but it's not a swap). If it's not, you have to choose second card. If it's still not werewolf or tanner you play with city.",
+            "You can see, what card you are on the end.",
+            "Choose player, whose card you want to robb.",
+            "Choose player on your left or right, you want to touch. He feels your touch and can confirm it during day.",
+            "Choose two cards from the center you want to see.",
+            "Now you will see who is a Seer.",
+            "Seer is in the center or it's not in the game at all.",
+            "You have to choose second card. If it's still not werewolf or tanner you play with city.",
+            "Nobody has been killed",
+            "Hide card names",
+            "Show card names",
+            "You are" };
+    private Socket socket;
+    private BufferedReader input;
+    private PrintWriter output;
+    GameActivity gameActivity;
+    BlockingQueue< String > msgQueue = new LinkedBlockingQueue<>();
 
-    private int port = 23000;
-    private String ip = "185.20.175.81";
-    public BufferedReader input;
-    public PrintWriter output;
-    private BlockingQueue< String > msgQueue = new LinkedBlockingQueue<>();
-    private ConnectActivity connectActivity;
-    private GameActivity gameActivity;
-
-    Game( String nickname, String gameID, ConnectActivity cA ){
-        this.connectActivity = cA;
-        this.nickname = nickname;
-        this.gameID = gameID;
-        Connect connect = new Connect();
-        connect.delegate = this;
-        connect.execute();
-    }
-
-    @Override
-    public void onConnected( boolean connected ){
-        connectActivity.connected( connected );
-        if( !connected )
-            return;
-        // Things after connected to the server
-        new GameNet().executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR );
-        new GameLogic().executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR );
-        Intent intent = new Intent( connectActivity, GameActivity.class );
-        intent.putExtra( "gameObject", this );
-        connectActivity.startActivity( intent );
-    }
-
-    private class Connect extends AsyncTask< Void, Void, String >{
-        Socket socket;
-        public AsyncResponse delegate = null;
-
-        @Override
-        protected void onPreExecute(){
-            super.onPreExecute();
-            connectActivity.connecting();
-        }
-
-        @Override
-        protected String doInBackground( Void... voids ){
-            try{
-                socket = new Socket();
-                socket.connect( new InetSocketAddress( ip, port ), 5000 );
-                input = new BufferedReader( new InputStreamReader( socket.getInputStream(), Charset.forName( "UTF-8" ) ) );
-                output = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), Charset.forName( "UTF-8" ) ), true );
-                sendToServer( gameID );
-                if( !receive().equals( "GOOD" ) )
-                    return "No such game. Make sure you have correct id.";
-                sendMsg( nickname );
-                String nickInfo = receive();
-                if( nickInfo.equals( "WRONGNICK" ) )
-                    return "Nickname already taken.";
-                if( !nickInfo.equals( "OK" ) )
-                    return "Something went wrong.";
-            } catch( IOException e ){
-                return "Cannot connect to the server.";
-            }
-            return "Game will start soon. Please don't close this window.";
-        }
-
-        @Override
-        protected void onPostExecute( String result ) {
-            super.onPostExecute( result );
-            connectActivity.info( result );
-            boolean connected = result.startsWith( "Game will" );
-            if( !connected ){
-                try{
-                    socket.close();
-                } catch( IOException ignored ){}
-            }
-            delegate.onConnected( connected );
-        }
+    Game( GameActivity gameActivity ){
+        this.gameActivity = gameActivity;
+        this.card = Model.getCard();
+        this.nickname = Model.getNickname();
+        this.players = Model.getPlayers();
+        this.socket = Model.getSocket();
+        try{
+            input = new BufferedReader( new InputStreamReader( socket.getInputStream(), Charset.forName( "UTF-8" ) ) );
+            output = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), Charset.forName( "UTF-8" ) ), true );
+        } catch( IOException ignored ){}
     }
 
     private class GameNet extends AsyncTask< Void, Void, Void >{
@@ -128,26 +103,8 @@ public class Game implements AsyncResponse, Serializable{
         }
     }
 
-    private class GameLogic extends AsyncTask< Void, Void, Void >{
-        @Override
-        protected Void doInBackground( Void... voids ){
-            getPlayers();
-            getCard();
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute( Void v ) {
-            super.onPostExecute( v );
-            connectActivity.started();
-            connectActivity.info( "Game started - " + card );
-        }
-    }
-
-    public void setGameActivity( GameActivity gameActivity ){
-        this.gameActivity = gameActivity;
+    public void runGame(){
         gameActivity.setCardLabel( card.split( "_" )[ 0 ] );
-        gameActivity.createPlayersCards();
         gameActivity.setNicknameLabel( nickname );
         gameActivity.updateMyCard( card );
         gameLogic();
@@ -163,14 +120,6 @@ public class Game implements AsyncResponse, Serializable{
         int rand = new Random().nextInt( players.size() - 1 );
         if( rand == players.indexOf( nickname ) ) rand = players.size() - 1;
         return players.get( rand );
-    }
-
-    private void getCard(){
-        card = read();
-    }
-
-    public void sendToServer( String msg ){
-        output.println( msg );
     }
 
     public void sendMsg( String str ){
@@ -202,11 +151,12 @@ public class Game implements AsyncResponse, Serializable{
                     wakeUp();
                     break;
                 }
-                gameActivity.setStatementLabel( msg.charAt( 0) + msg.substring( 1 ).toLowerCase() + " " + statements[ 0 ] );
+                String msgCard = msg.charAt( 0 ) + msg.substring( 1 ).toLowerCase();
+                gameActivity.setStatementLabel( msgCard + " " + statements[ 0 ] );
                 if( msg.equals( card.split( "_" )[ 0 ].toUpperCase() ) || ( msg.equals( "WEREWOLF" ) && card.equals( "Mystic wolf" ) ) ){
-                    gameActivity.setStatementLabel( msg.charAt( 0) + msg.substring( 1 ).toLowerCase() + " " + statements[ 1 ] );
+                    gameActivity.setStatementLabel( msgCard + " " + statements[ 1 ] );
                     try {
-                        proceedCard( msg.charAt( 0) + msg.substring( 1 ).toLowerCase() );
+                        proceedCard( msgCard );
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -216,7 +166,7 @@ public class Game implements AsyncResponse, Serializable{
             }
             if( receive().equals( UNIQUE_CHAR + "VOTE" ) ){
                 gameActivity.setStatementLabel( statements[ 2 ] );
-                while( vote() != 0 );
+                while( vote() != 0 );       // Not busy waiting, just repeat voting until it returns 0.
             }
         } );
         gameLogic.start();
@@ -411,6 +361,7 @@ public class Game implements AsyncResponse, Serializable{
             int rand = new Random().nextInt( 3 );
             cardClick = UNIQUE_CHAR + "card" + rand;
         }
+        gameActivity.setTableCardActive( cardClick, false );
         String cards = cardClick + MSG_SPLITTER;
         cardClick = getClickedCard();
         if( cardClick == null ){
@@ -516,7 +467,10 @@ public class Game implements AsyncResponse, Serializable{
                 if( vote.equals( UNIQUE_CHAR + "VOTEEND" ) ){
                     synchronized( voteLock ){
                         voteNotEnded.set( false );
-                        voteNotEnded.notify();
+                        voteLock.notify();
+                    }
+                    synchronized( clickedLock ){
+                        clickedLock.notify();
                     }
                     break;
                 }
@@ -524,23 +478,22 @@ public class Game implements AsyncResponse, Serializable{
             }
         } );
         votes.start();
-        String cardVoted = getClickedCard();        //TODO clicked card notify when vote ended
-//        while( waitingForButton && voteNotEnded.get() );
+        Log.i( "MyMsg", "Want to get vote." );
+        String cardVoted = getClickedCard( true );
+        Log.i( "MyMsg", "Got vote." );
         gameActivity.setPlayersCardsActive( false );
         gameActivity.setTableCardsActive( false );
-        if( cardVoted != null ){
+        if( cardVoted != null && voteNotEnded.get() ){
             if( clickedCard.substring( 0, 1 ).equals( UNIQUE_CHAR ) )
                 clickedCard = UNIQUE_CHAR + "table";
             sendMsg( clickedCard );
         }
-        if( voteNotEnded.get() ){
-            synchronized( voteLock ){
-                while( !voteNotEnded.get() ){
-                    try{
-                        voteNotEnded.wait();
-                    } catch( InterruptedException e ){
-                        break;
-                    }
+        synchronized( voteLock ){
+            while( voteNotEnded.get() ){
+                try{
+                    voteLock.wait();
+                } catch( InterruptedException e ){
+                    break;
                 }
             }
         }
@@ -602,20 +555,29 @@ public class Game implements AsyncResponse, Serializable{
         synchronized( clickedLock ){
             clickedCard = card;
             isClicked = true;
-            isClicked.notify();
+            clickedLock.notify();
         }
     }
 
-    private String getClickedCard(){
+    private String getClickedCard( boolean vote ){
         synchronized( clickedLock ){
             while( !isClicked ){
                 try{
-                    isClicked.wait( MAX_ROLE_TIME * 1000 );
+                    clickedLock.wait( MAX_ROLE_TIME * 1000 );
+                    if( !vote ){
+                        clickedCard = null;
+                        break;
+                    }
                 } catch( InterruptedException e ){
                     return null;
                 }
             }
+            isClicked = false;
             return clickedCard;
         }
+    }
+
+    private String getClickedCard(){
+        return getClickedCard( false );
     }
 }

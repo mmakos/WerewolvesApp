@@ -5,10 +5,7 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -18,9 +15,6 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.Objects;
 
 public class ConnectActivity extends AppCompatActivity{
@@ -49,12 +43,7 @@ public class ConnectActivity extends AppCompatActivity{
         connectingBar = findViewById( R.id.connectingBar );
         waitingForGameBar = findViewById( R.id.waitingForGameBar );
 
-        connectButton.setOnClickListener( new View.OnClickListener(){
-            @Override
-            public void onClick( View v ){
-                connect();
-            }
-        } );
+        connectButton.setOnClickListener( v -> connect() );
 
         nicknameField.addTextChangedListener( new TextWatcher(){
             @Override
@@ -101,7 +90,7 @@ public class ConnectActivity extends AppCompatActivity{
             info( "Fields content is not valid." );
             return;
         }
-        Game game = new Game( login, gameIdField.getText().toString(), this );
+        Connect connect = new Connect( login, gameIdField.getText().toString(), this );
     }
 
     public void info( String info ){
