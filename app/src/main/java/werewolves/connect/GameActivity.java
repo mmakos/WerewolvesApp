@@ -17,12 +17,16 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
+import com.google.android.material.circularreveal.CircularRevealWidget;
+
+import java.io.IOException;
 import java.util.Objects;
 import java.util.Vector;
 
@@ -39,7 +43,7 @@ public class GameActivity extends AppCompatActivity{
         Objects.requireNonNull( getSupportActionBar() ).hide();
         setContentView( R.layout.game_activity );
 
-        final DrawerLayout drawerLayout = findViewById( R.id.mainLayout );
+        drawerLayout = findViewById( R.id.mainLayout );
         findViewById( R.id.menuArrow ).setOnClickListener( v -> drawerLayout.openDrawer( GravityCompat.START ) );
 
         rolesLabel = findViewById( R.id.rolesLabel );
@@ -57,23 +61,41 @@ public class GameActivity extends AppCompatActivity{
         game.runGame();
     }
 
+    private long backPressedTime = 0;
+    @SuppressLint( "ShowToast" )
+    @Override
+    public void onBackPressed(){
+        if( backPressedTime + 2000 > System.currentTimeMillis() || game.isEnded() ){
+            super.onBackPressed();
+            try{
+                Model.getSocket().close();
+            } catch( IOException ignored ){}
+            return;
+        }
+        else
+            Toast.makeText( this, "Seriously? You will ruin the game!\nPsst, press two times to quit.", Toast.LENGTH_LONG ).show();
+        backPressedTime = System.currentTimeMillis();
+    }
+
     //----------- Create Game Layout --------------
     public void createTableCards(){
+        int space = getPx( 10 );
         card0 = getCard( "", playersQuant );
-        int x = ( sceneWidth - cardWidth ) / 2 - cardWidth;
+        int x = ( sceneWidth - cardWidth ) / 2 - cardWidth - space;
         int y = ( sceneHeight - cardHeight ) / 2;
         placeCard( card0, x, y );
         card1 = getCard( "", playersQuant + 1 );
-        x = x + cardWidth;
+        x = x + cardWidth + space;
         placeCard( card1, x, y );
         card2 = getCard( "", playersQuant + 2 );
-        x = x + cardWidth;
+        x = x + cardWidth + space;
         placeCard( card2, x, y );
     }
 
     public void createPlayersCards(){
         int a = ( sceneWidth - cardWidth - getPx( 100 ) ) / 2, b = ( sceneHeight - cardHeight ) / 2, p = playersQuant;
 
+        Log.i( TAG, "createPlayersCards: scene" + sceneWidth + " x " + sceneHeight );
         playersCards.setSize( p );
         knownCards.setSize( p + 3 );
 //        for( String s : knownCards ) s = null;
@@ -144,12 +166,13 @@ public class GameActivity extends AppCompatActivity{
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics( displayMetrics );
         sceneHeight = displayMetrics.heightPixels;
-        sceneWidth = displayMetrics.widthPixels - getPx( 40 );
+        sceneWidth = displayMetrics.widthPixels;
         if( sceneHeight > sceneWidth ){
             int t = sceneHeight;
             sceneHeight = sceneWidth;
             sceneWidth = t;
         }
+        sceneHeight = sceneHeight - getPx( 40 );
     }
 
     //------------- HELP -----------------
@@ -299,6 +322,46 @@ public class GameActivity extends AppCompatActivity{
         } );
     }
 
+    public void clearArrows(){
+        runOnUiThread( () -> {
+            for( Arrow a : arrows )
+                gameArea.removeView( a );
+            arrows.clear();
+        } );
+    }
+
+    public void drawArrow( String from, String to ){
+        Button fromButton = playersCards.get( game.players.indexOf( from ) );
+        double x1, y1, x2, y2;
+        x1 = fromButton.getX() + ( double )cardWidth / 2;
+        y1 = fromButton.getY() + ( double )cardHeight / 2;
+        if( to.equals( Game.UNIQUE_CHAR + "table" ) ){
+            x2 = ( double ) sceneWidth / 2;
+            y2 = ( double ) sceneHeight / 2;
+        }
+        else{
+            Button toButton = playersCards.get( game.players.indexOf( to ) );
+            int a = cardHeight / 2;
+            x2 = toButton.getX() + ( double )cardWidth / 2;
+            y2 = toButton.getY() + ( double )cardHeight / 2;
+            double dist = Math.hypot( x2 - x1, y2 - y1 );
+            x2 = x2 - ( a * ( x2 - x1 ) / dist );
+            y2 = y2 - ( a * ( y2 - y1 ) / dist );
+        }
+        double finalX = x2;
+        double finalY = y2;
+        runOnUiThread( () -> {
+            Arrow a = new Arrow( this );
+            arrows.add( a );
+            gameArea.addView( a );
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP )
+                a.setElevation( 10.f );
+            else
+                a.bringToFront();
+            a.draw( ( int )x1, ( int ) y1, ( int )finalX, ( int ) finalY, 2000 );
+        } );
+    }
+
     public void onClick( View v ){
         int btnId = v.getId();
         String card;
@@ -324,7 +387,7 @@ public class GameActivity extends AppCompatActivity{
     private Vector< Button > playersCards = new Vector<>();
     private int playersQuant;
     private int yourCardPos;
-//    private Vector< Line > lines = new Vector<>();
+    private Vector< Arrow > arrows = new Vector<>();
     public Vector< String > knownCards = new Vector<>();
     private TextView rolesLabel;
     private TextView currentRoleLabel;
@@ -336,6 +399,7 @@ public class GameActivity extends AppCompatActivity{
     private static int buttonTextSize = 10;
     private final static float INACTIVE_OPACITY = 0.5f;
     private Game game;
+    private DrawerLayout drawerLayout;
 
     private static final String TAG = "MyMsg";
 }

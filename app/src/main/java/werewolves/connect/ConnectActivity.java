@@ -11,10 +11,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public class ConnectActivity extends AppCompatActivity{
@@ -27,6 +29,7 @@ public class ConnectActivity extends AppCompatActivity{
     private Button connectButton;
     private ProgressBar connectingBar;
     private ProgressBar waitingForGameBar;
+    private boolean connected = false;
 
     @Override
     protected void onCreate( @Nullable Bundle savedInstanceState ){
@@ -57,6 +60,27 @@ public class ConnectActivity extends AppCompatActivity{
                 checkNickname();
             }
         } );
+    }
+
+    private long backPressedTime = 0;
+    @SuppressLint( "ShowToast" )
+    @Override
+    public void onBackPressed(){
+        if( backPressedTime + 3000 > System.currentTimeMillis() || !connected ){
+            try{
+                Model.getSocket().close();
+            } catch( IOException ignored ){}
+            super.onBackPressed();
+            return;
+        }
+        else
+            Toast.makeText( this, "Are you sure?\nPress again to exit.", Toast.LENGTH_SHORT ).show();
+        backPressedTime = System.currentTimeMillis();
+    }
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
     }
 
     @SuppressLint( "SetTextI18n" )
@@ -90,7 +114,7 @@ public class ConnectActivity extends AppCompatActivity{
             info( "Fields content is not valid." );
             return;
         }
-        Connect connect = new Connect( login, gameIdField.getText().toString(), this );
+        new Connect( login, gameIdField.getText().toString(), this );
     }
 
     public void info( String info ){
@@ -103,6 +127,7 @@ public class ConnectActivity extends AppCompatActivity{
         if( connected ){
             connectButton.setText( "Joined" );
             waitingForGameBar.setVisibility( View.VISIBLE );
+            this.connected = true;
         }
         else{
             connectButton.setText( "Join" );

@@ -25,11 +25,12 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:padding="4dp"
-                android:rotation="180"
+                android:rotation="0"
                 android:rotationY="0"
                 app:srcCompat="@drawable/left_arrow"
                 app:tint="@color/black"
-                tools:srcCompat="@drawable/left_arrow" />
+                tools:srcCompat="@drawable/left_arrow"
+                tools:ignore="VectorDrawableCompat" />
 
             <TextView
                 android:id="@+id/currentRoleLabel"

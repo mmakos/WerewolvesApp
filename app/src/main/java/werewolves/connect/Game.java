@@ -17,8 +17,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Game{
+    private static final String TAG = "MyMsg";
     private final Object clickedLock = new Object();        // to synchronize clicked card moment
     private Boolean isClicked = false;
+    private boolean isEnded = false;
     private String clickedCard;
     public static final transient String COM_SPLITTER = String.valueOf( ( char )28 );
     public final static transient String MSG_SPLITTER = String.valueOf( ( char )29 );
@@ -86,6 +88,10 @@ public class Game{
         } catch( IOException ignored ){}
     }
 
+    public boolean isEnded(){
+        return isEnded;
+    }
+
     private class GameNet extends AsyncTask< Void, Void, Void >{
         @Override
         protected Void doInBackground( Void... voids ){
@@ -142,7 +148,6 @@ public class Game{
         }
     }
 
-
     public void gameLogic(){
         Thread gameLogic = new Thread( () -> {
             while( true ){
@@ -167,6 +172,7 @@ public class Game{
             if( receive().equals( UNIQUE_CHAR + "VOTE" ) ){
                 gameActivity.setStatementLabel( statements[ 2 ] );
                 while( vote() != 0 );       // Not busy waiting, just repeat voting until it returns 0.
+                isEnded = true;
             }
         } );
         gameLogic.start();
@@ -351,23 +357,27 @@ public class Game{
         else gameActivity.reverseCard(msg,"Seer");
     }
 
-    void makeSeer() throws InterruptedException {
+    void makeSeer(){
         gameActivity.setRoleInfo( statements[ 31 ] );
         gameActivity.setTableCardsActive( true );
 
         String cardClick = getClickedCard();
         // If time is up, card will be selected randomly
+        Log.i( TAG, "makeSeer: " + cardClick );
         if( cardClick == null ){
             int rand = new Random().nextInt( 3 );
             cardClick = UNIQUE_CHAR + "card" + rand;
         }
+        Log.i( TAG, "makeSeer: " + cardClick );
         gameActivity.setTableCardActive( cardClick, false );
         String cards = cardClick + MSG_SPLITTER;
         cardClick = getClickedCard();
+        Log.i( TAG, "makeSeer: " + cardClick );
         if( cardClick == null ){
             int rand = new Random().nextInt( 3 );
             cardClick = UNIQUE_CHAR + "card" + rand;
         }
+        Log.i( TAG, "makeSeer: " + cardClick );
         cards += cardClick;
         sendMsg( cards );
         String[] cardsInCenter = receive().split( MSG_SPLITTER );
@@ -474,7 +484,7 @@ public class Game{
                     }
                     break;
                 }
-//                Platform.runLater( () -> gameActivity.drawArrow( vote.split( MSG_SPLITTER )[ 0 ], vote.split( MSG_SPLITTER )[ 1 ] ) );
+                gameActivity.drawArrow( vote.split( MSG_SPLITTER )[ 0 ], vote.split( MSG_SPLITTER )[ 1 ] );
             }
         } );
         votes.start();
@@ -484,9 +494,9 @@ public class Game{
         gameActivity.setPlayersCardsActive( false );
         gameActivity.setTableCardsActive( false );
         if( cardVoted != null && voteNotEnded.get() ){
-            if( clickedCard.substring( 0, 1 ).equals( UNIQUE_CHAR ) )
-                clickedCard = UNIQUE_CHAR + "table";
-            sendMsg( clickedCard );
+            if( cardVoted.substring( 0, 1 ).equals( UNIQUE_CHAR ) )
+                cardVoted = UNIQUE_CHAR + "table";
+            sendMsg( cardVoted );
         }
         synchronized( voteLock ){
             while( voteNotEnded.get() ){
@@ -500,8 +510,7 @@ public class Game{
         String voteResult = receive();
         if( voteResult.equals( UNIQUE_CHAR + "VOTE" ) ){      // vote again
             gameActivity.setStatementLabel( statements[ 6 ] );
-//            Thread t = new Thread( () -> Platform.runLater( () -> gameActivity.clearArrows() ) );
-//            t.start();
+            gameActivity.clearArrows();
             return -1;
         }
         Vector< String > cardsNow = new Vector<>( Arrays.asList( receive().split( MSG_SPLITTER ) ) );
@@ -551,9 +560,10 @@ public class Game{
         }
     }
 
-    public void setClickedCard( String card ){
+    public void setClickedCard( String c ){
         synchronized( clickedLock ){
-            clickedCard = card;
+            clickedCard = c;
+            Log.i( TAG, "setClickedCard: " + c );
             isClicked = true;
             clickedLock.notify();
         }
@@ -564,16 +574,16 @@ public class Game{
             while( !isClicked ){
                 try{
                     clickedLock.wait( MAX_ROLE_TIME * 1000 );
-                    if( !vote ){
-                        clickedCard = null;
+                    if( !vote )
                         break;
-                    }
                 } catch( InterruptedException e ){
                     return null;
                 }
             }
             isClicked = false;
-            return clickedCard;
+            String c = clickedCard;
+            clickedCard = null;
+            return c;
         }
     }
 
