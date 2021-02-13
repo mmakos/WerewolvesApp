@@ -1,14 +1,18 @@
 package werewolves.connect;
+import android.app.Service;
+import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Binder;
+import android.os.Handler;
+import android.os.IBinder;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Vector;
@@ -16,7 +20,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Game{
+public class Game extends Service{
     private static final String TAG = "MyMsg";
     private final Object clickedLock = new Object();        // to synchronize clicked card moment
     private Boolean isClicked = false;
@@ -25,6 +29,7 @@ public class Game{
     public static final transient String COM_SPLITTER = String.valueOf( ( char )28 );
     public final static transient String MSG_SPLITTER = String.valueOf( ( char )29 );
     public final static transient String UNIQUE_CHAR = String.valueOf( ( char )2 );
+    private final static int KEEP_ALIVE_TIME = 300; // in seconds
     public final static transient int MAX_ROLE_TIME = 30;
     private static final transient boolean minionWinsWhenHeDies = true;
     public Vector< String > players;
@@ -74,23 +79,66 @@ public class Game{
     private BufferedReader input;
     private PrintWriter output;
     GameActivity gameActivity;
+    Thread keepAlive;
     BlockingQueue< String > msgQueue = new LinkedBlockingQueue<>();
 
-    Game( GameActivity gameActivity ){
+    public void initGameActivity( GameActivity gameActivity ){
         this.gameActivity = gameActivity;
         this.card = Model.getCard();
         this.nickname = Model.getNickname();
         this.players = Model.getPlayers();
         this.socket = Model.getSocket();
-        try{
-            input = new BufferedReader( new InputStreamReader( socket.getInputStream(), Charset.forName( "UTF-8" ) ) );
-            output = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), Charset.forName( "UTF-8" ) ), true );
-        } catch( IOException ignored ){}
+        this.input = Model.getInput();
+        this.output = Model.getOutput();
+        gameActivity.createPlayersCards();
+        gameActivity.createTableCards();
+        gameActivity.setCardLabel( " " + card.split( "_" )[ 0 ] );
+        gameActivity.setNicknameLabel( nickname );
+        gameActivity.updateMyCard( card );
+
+        new GameNet().execute();
+
+        keepAlive = new Thread( () -> {
+            while( true ){
+                try{
+                    Thread.sleep( KEEP_ALIVE_TIME * 1000 );
+                    output.println( UNIQUE_CHAR + "ALIVE" );
+                } catch( InterruptedException e ){
+                    break;
+                }
+            }
+        } );
+        keepAlive.start();
+        //----------- keep alive ---------------
+//        Handler keepAlive = new Handler();
+//        final Runnable r = new Runnable(){
+//            public void run() {
+//                Log.i( TAG, "run: print alive" );
+//                output.println( UNIQUE_CHAR + "ALIVE" );
+//                keepAlive.postDelayed( this, KEEP_ALIVE_TIME * 1000 );
+//            }
+//        };
+//        keepAlive.postDelayed( r, KEEP_ALIVE_TIME * 1000 );
+        gameLogic();
     }
 
     public boolean isEnded(){
         return isEnded;
     }
+
+    private final IBinder binder = new MyBinder();
+    @Nullable
+    @Override
+    public IBinder onBind( Intent intent ){
+        return binder;
+    }
+
+    public class MyBinder extends Binder{
+        Game getService(){
+            return Game.this;
+        }
+    }
+
 
     private class GameNet extends AsyncTask< Void, Void, Void >{
         @Override
@@ -98,10 +146,16 @@ public class Game{
             while( true ){
                 try{
                     String msg = input.readLine();
-                    if( msg == null || msg.equals( "ENDGAME" ) ){
-                        msg = UNIQUE_CHAR + "ABORT";
-                        msgQueue.put( msg );
+                    if( msg == null ){
+                        Log.i( TAG, "doInBackground: abort" );
+                        abort();
                         return null;
+                    }
+                    else if( msg.equals( UNIQUE_CHAR + "ENDGAME" ) )
+                        return null;
+                    else if( msg.equals( UNIQUE_CHAR + "ALIVE" ) ){
+                        Log.i( TAG, "doInBackground: alive" );
+                        continue;
                     }
                     msgQueue.put( msg );
                 } catch( IOException | InterruptedException ignored ){}
@@ -109,17 +163,9 @@ public class Game{
         }
     }
 
-    public void runGame(){
-        gameActivity.setCardLabel( card.split( "_" )[ 0 ] );
-        gameActivity.setNicknameLabel( nickname );
-        gameActivity.updateMyCard( card );
-        gameLogic();
-    }
-
-    private void getPlayers(){
-        String msg = read();
-        String[] playersTab = msg.split( MSG_SPLITTER, 0 );
-        players.addAll( Arrays.asList( playersTab ) );
+    private void abort(){
+        keepAlive.interrupt();
+        gameActivity.abort();
     }
 
     private String getRandomPlayerCard(){
@@ -130,14 +176,6 @@ public class Game{
 
     public void sendMsg( String str ){
         output.println( "ADM" + COM_SPLITTER + str );
-    }
-
-    String receive(){
-        try{
-            return input.readLine();
-        }catch( IOException e ){
-            return "";
-        }
     }
 
     String read(){
@@ -151,15 +189,15 @@ public class Game{
     public void gameLogic(){
         Thread gameLogic = new Thread( () -> {
             while( true ){
-                String msg = receive();
+                String msg = read();
                 if( msg.equals( "WakeUp" ) ){
                     wakeUp();
                     break;
                 }
                 String msgCard = msg.charAt( 0 ) + msg.substring( 1 ).toLowerCase();
-                gameActivity.setStatementLabel( msgCard + " " + statements[ 0 ] );
+                gameActivity.setStatementLabel( msgCard + " " + getString( R.string.wakesUp ) );
                 if( msg.equals( card.split( "_" )[ 0 ].toUpperCase() ) || ( msg.equals( "WEREWOLF" ) && card.equals( "Mystic wolf" ) ) ){
-                    gameActivity.setStatementLabel( msgCard + " " + statements[ 1 ] );
+                    gameActivity.setStatementLabel( msgCard + " " + getString( R.string.yourTurn ) );
                     try {
                         proceedCard( msgCard );
                     } catch (InterruptedException e) {
@@ -169,8 +207,8 @@ public class Game{
                 if( msg.equals( "THING" ) )
                     waitForTingsTouch();
             }
-            if( receive().equals( UNIQUE_CHAR + "VOTE" ) ){
-                gameActivity.setStatementLabel( statements[ 2 ] );
+            if( read().equals( UNIQUE_CHAR + "VOTE" ) ){
+                gameActivity.setStatementLabel( getString( R.string.vote ) );
                 while( vote() != 0 );       // Not busy waiting, just repeat voting until it returns 0.
                 isEnded = true;
             }
@@ -203,7 +241,7 @@ public class Game{
     }
 
     void makeCopycat(){
-        gameActivity.setRoleInfo( statements[ 16 ] );
+        gameActivity.setRoleInfo( getString( R.string.copycat1 ) );
         gameActivity.setTableCardsActive( true );
 
         // Waiting for clicked card, but with time limit of 30 seconds
@@ -212,22 +250,22 @@ public class Game{
         if( cardClick == null ){
             int rand = new Random().nextInt( 3 );
             cardClick = UNIQUE_CHAR + "card" + rand;
-            gameActivity.setRoleInfo( statements[ 13 ] + "\n" +
-                    statements[ 17 ] );
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) + "\n" +
+                    getString( R.string.copycat2 ) );
         }
         else
-            gameActivity.setRoleInfo( statements[ 17 ] );
+            gameActivity.setRoleInfo( getString( R.string.copycat2 ) );
         gameActivity.setTableCardsActive( false );
         sendMsg( cardClick );
-        card = receive();
-        gameActivity.setStatementLabel( statements[ 3 ] + " " + card.split( "_" )[ 0 ] );
+        card = read();
+        gameActivity.setStatementLabel( getString( R.string.youBecame ) + " " + card.split( "_" )[ 0 ] );
         gameActivity.reverseCard( cardClick, card );
         gameActivity.setCardLabel( " -> " + card.split( "_" )[ 0 ] );
     }
 
     void makeWerewolf(){
         StringBuilder str = new StringBuilder();
-        String[] werewolves = receive().split( MSG_SPLITTER );
+        String[] werewolves = read().split( MSG_SPLITTER );
         for( String werewolf: werewolves ){
             if( !werewolf.equals( nickname ) ){
                 gameActivity.reverseCard( werewolf, "Werewolf_0" );
@@ -235,26 +273,26 @@ public class Game{
             }
         }
         if( str.toString().isEmpty() ){
-            gameActivity.setRoleInfo( statements[ 18 ] );
+            gameActivity.setRoleInfo( getString( R.string.werewolf1 ) );
             gameActivity.setTableCardsActive( true );
             String cardClick = getClickedCard();
             if( cardClick == null ){
                 int rand = new Random().nextInt( 3 );
                 cardClick = UNIQUE_CHAR + "card" + rand;
-                gameActivity.setRoleInfo( statements[ 13 ] );
+                gameActivity.setRoleInfo( getString( R.string.timeUp ) );
             }
             gameActivity.setTableCardsActive( false );
             sendMsg( cardClick );
-            String chosenCard = receive();
+            String chosenCard = read();
             gameActivity.reverseCard( cardClick, chosenCard );
         }
         else
-            gameActivity.setRoleInfo( statements[ 19 ] + str.toString() + "." );
+            gameActivity.setRoleInfo( getString( R.string.werewolf2 ) + str.toString() + "." );
     }
 
     void makeMinion(){
         StringBuilder str = new StringBuilder();
-        String[] werewolves = receive().split( MSG_SPLITTER, 0 );
+        String[] werewolves = read().split( MSG_SPLITTER, 0 );
         if( !werewolves[ 0 ].equals( "" ) ){
             for( String werewolf : werewolves ){
                 gameActivity.reverseCard( werewolf, "Werewolf_0" );
@@ -262,13 +300,13 @@ public class Game{
             }
         }
         if( str.toString().isEmpty() )
-            gameActivity.setRoleInfo( statements[ 20 ] );
+            gameActivity.setRoleInfo( getString( R.string.minion1 ) );
         else
-            gameActivity.setRoleInfo( statements[ 21 ] + str.toString() + "." );
+            gameActivity.setRoleInfo( getString( R.string.minion2 ) + str.toString() + "." );
     }
 
     void makeMysticWolf(){
-        gameActivity.setRoleInfo( statements[ 22 ] );
+        gameActivity.setRoleInfo( getString( R.string.mystic ) );
         gameActivity.setTableCardsActive( true );
 
         String cardClick = getClickedCard();
@@ -276,15 +314,15 @@ public class Game{
         if( cardClick == null ){
             int rand = new Random().nextInt( 3 );
             cardClick = UNIQUE_CHAR + "card" + rand;
-            gameActivity.setRoleInfo( statements[ 13 ] );
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) );
         }
         gameActivity.setTableCardsActive( false );
         sendMsg( cardClick );
-        String chosenCard = receive();
+        String chosenCard = read();
         gameActivity.reverseCard( cardClick, chosenCard );
     }
     void makeApprenticeSeer(){
-        gameActivity.setRoleInfo( statements[ 22 ] );
+        gameActivity.setRoleInfo( getString( R.string.apprentice ) );
         gameActivity.setTableCardsActive( true );
 
         String cardClick = getClickedCard();
@@ -292,15 +330,15 @@ public class Game{
         if( cardClick == null ){
             int rand = new Random().nextInt( 3 );
             cardClick = UNIQUE_CHAR + "card" + rand;
-            gameActivity.setRoleInfo( statements[ 13 ] );
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) );
         }
         gameActivity.setTableCardsActive( false );
         sendMsg( cardClick );
-        String chosenCard = receive();
+        String chosenCard = read();
         gameActivity.reverseCard( cardClick, chosenCard );
     }
     void makeWitch(){
-        gameActivity.setRoleInfo( statements[ 23 ] );
+        gameActivity.setRoleInfo( getString( R.string.witch1 ) );
         gameActivity.setTableCardsActive( true );
 
         String cardClick = getClickedCard();
@@ -308,11 +346,11 @@ public class Game{
         if( cardClick == null ){
             int rand = new Random().nextInt( 3 );
             cardClick = UNIQUE_CHAR + "card" + rand;
-            gameActivity.setRoleInfo( statements[ 13 ] + "\n" + statements[ 24 ] );
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) + "\n" + getString( R.string.witch2 ) );
         }
         gameActivity.setTableCardsActive( false );
         sendMsg( cardClick );
-        String chosenCard = receive();
+        String chosenCard = read();
         gameActivity.reverseCard( cardClick, chosenCard );
         String firstClickedCard = cardClick;
 
@@ -320,7 +358,7 @@ public class Game{
         cardClick = getClickedCard();
         if( cardClick == null ){
             cardClick = getRandomPlayerCard();
-            gameActivity.setRoleInfo( statements[ 13 ] );
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) );
         }
         gameActivity.setPlayersCardsActive( false );
         gameActivity.hideCenterCard( firstClickedCard );
@@ -329,21 +367,21 @@ public class Game{
     }
 
     void makeTroublemaker(){
-        gameActivity.setRoleInfo( statements[ 25 ] );
+        gameActivity.setRoleInfo( getString( R.string.troublemaker1 ) );
         gameActivity.setPlayersCardsActive( true );
 
         String cardClick = getClickedCard();
         // If time is up, card will be selected randomly
         if( cardClick == null ){
             cardClick = getRandomPlayerCard();
-            gameActivity.setRoleInfo( statements[ 13 ] + "\n" + statements[ 26 ] );
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) + "\n" + getString( R.string.troublemaker2 ) );
         }
         String cards = cardClick + MSG_SPLITTER;
         gameActivity.setPlayerCardActive( players.indexOf( cardClick ), false );
         cardClick = getClickedCard();
         if( cardClick == null ){
             cardClick = getRandomPlayerCard();
-            gameActivity.setRoleInfo( statements[ 13 ] );
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) );
         }
         cards += cardClick;
         gameActivity.setPlayersCardsActive( false );
@@ -351,90 +389,92 @@ public class Game{
     }
 
     void makeBeholder(){
-        gameActivity.setRoleInfo( statements[ 32 ] );
-        String msg = receive();
-        if( msg.equals( "NoSeer" ) ) gameActivity.setRoleInfo( statements[ 33 ] );
+        gameActivity.setRoleInfo( getString( R.string.beholder1 ) );
+        String msg = read();
+        if( msg.equals( "NoSeer" ) ) gameActivity.setRoleInfo( getString( R.string.beholder2 ) );
         else gameActivity.reverseCard(msg,"Seer");
     }
 
     void makeSeer(){
-        gameActivity.setRoleInfo( statements[ 31 ] );
+        gameActivity.setRoleInfo( getString( R.string.seer1 ) );
         gameActivity.setTableCardsActive( true );
 
         String cardClick = getClickedCard();
         // If time is up, card will be selected randomly
-        Log.i( TAG, "makeSeer: " + cardClick );
         if( cardClick == null ){
             int rand = new Random().nextInt( 3 );
             cardClick = UNIQUE_CHAR + "card" + rand;
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) + " " + getString( R.string.seer2 ) );
         }
-        Log.i( TAG, "makeSeer: " + cardClick );
         gameActivity.setTableCardActive( cardClick, false );
         String cards = cardClick + MSG_SPLITTER;
         cardClick = getClickedCard();
-        Log.i( TAG, "makeSeer: " + cardClick );
         if( cardClick == null ){
             int rand = new Random().nextInt( 3 );
             cardClick = UNIQUE_CHAR + "card" + rand;
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) );
         }
-        Log.i( TAG, "makeSeer: " + cardClick );
         cards += cardClick;
         sendMsg( cards );
-        String[] cardsInCenter = receive().split( MSG_SPLITTER );
+        String[] cardsInCenter = read().split( MSG_SPLITTER );
         String[] clickedCards = cards.split( MSG_SPLITTER );
         gameActivity.setTableCardsActive( false );
         gameActivity.reverseCard( clickedCards[ 0 ], cardsInCenter[ 0 ] );
         gameActivity.reverseCard( clickedCards[ 1 ], cardsInCenter[ 1 ] );
     }
     void makeInsomniac(){
-        gameActivity.setRoleInfo( statements[ 28 ] );
-        String insomniacNow = receive();
+        gameActivity.setRoleInfo( getString( R.string.insomniac ) );
+        String insomniacNow = read();
         gameActivity.setCardLabel( " -> " + insomniacNow );
         gameActivity.updateMyCard( insomniacNow );
     }
 
     void makeParanormal(){
-        gameActivity.setRoleInfo( statements[ 27 ] );
+        gameActivity.setRoleInfo( getString( R.string.paranormal1 ) );
         gameActivity.setPlayersCardsActive( true );
         for( int i = 0; i < 2; ++i ){
             String cardClick = getClickedCard();
             if( cardClick == null ){
                 cardClick = getRandomPlayerCard();
-                gameActivity.setRoleInfo( statements[ 13 ] + "\n" + statements[ 34 ] );
+                gameActivity.setRoleInfo( getString( R.string.timeUp ) + "\n" + getString( R.string.paranormal2 ) );
             }
+            else
+                gameActivity.setRoleInfo( getString( R.string.paranormal2 ) );
             sendMsg( cardClick );
-            String msg = receive();
+            String msg = read();
             gameActivity.reverseCard( cardClick, msg );
             msg = msg.split( "_" )[ 0 ];
             if( msg.equals( "Tanner" ) || msg.equals( "Werewolf" ) || msg.equals( "Mystic wolf" ) ){
                 gameActivity.setCardLabel( " -> " + msg );
-                gameActivity.setStatementLabel( statements[ 3 ] + " " + msg );
+                gameActivity.setStatementLabel( getString( R.string.youBecame ) + " " + msg );
                 break;
             }
+            if( i == 2 )
+                gameActivity.setRoleInfo( getString( R.string.paranormal3 ) );
         }
         gameActivity.setPlayersCardsActive( false );
     }
 
     void makeRobber(){
-        gameActivity.setRoleInfo( statements[ 29 ] );
+        gameActivity.setRoleInfo( getString( R.string.robber ) );
         gameActivity.setPlayersCardsActive( true );
         String cardClick = getClickedCard();
         if( cardClick == null ){
             cardClick = getRandomPlayerCard();
-            gameActivity.setRoleInfo( statements[ 13 ] );
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) );
         }
         gameActivity.setPlayersCardsActive( false );
         sendMsg( cardClick );
-        String msg = receive();
+        String msg = read();
         String msg2 = msg.split( "_" )[ 0 ];
         gameActivity.setCardLabel( " -> " + msg2 );
-        gameActivity.setStatementLabel( statements[ 3 ] + " " + msg2 );
+        gameActivity.setStatementLabel( getString( R.string.youBecame ) + " " + msg2 );
         gameActivity.reverseCard( cardClick, displayedCard );
         gameActivity.updateMyCard( msg );
     }
 
     void makeThing(){
-        gameActivity.setRoleInfo( statements[ 30 ] );
+        gameActivity.setRoleInfo( getString( R.string.thing ) );
         int myIndex = players.indexOf( nickname );
         gameActivity.setPlayerCardActive( ( myIndex + 1 ) % players.size(), true );
         if( myIndex == 0 )
@@ -444,22 +484,22 @@ public class Game{
         String cardClick = getClickedCard();
         if( cardClick == null ){
             cardClick = players.get( ( myIndex + 1 ) % players.size() );
-            gameActivity.setRoleInfo( statements[ 13 ] );
+            gameActivity.setRoleInfo( getString( R.string.timeUp ) );
         }
         gameActivity.setPlayersCardsActive( false );
         sendMsg( cardClick );
     }
 
     void waitForTingsTouch(){
-        if( receive().equals( "TOUCH" ) ){
-            gameActivity.setCardLabel( " -> " + statements[ 4 ] );
-            gameActivity.setStatementLabel( statements[ 5 ] );
+        if( read().equals( "TOUCH" ) ){
+            gameActivity.setCardLabel( " -> " + getString( R.string.touched ) );
+            gameActivity.setStatementLabel( getString( R.string.thingTouch ) );
         }
     }
 
     void wakeUp(){
-        gameActivity.setStatementLabel( statements[ 14 ] );
-        gameActivity.setRoleInfo( statements[ 15 ] );
+        gameActivity.setStatementLabel( getString( R.string.cityWakeUp ) );
+        gameActivity.setRoleInfo( getString( R.string.connectViaZoom ) );
 //        try{
 //            wakeUpSignal.play();
 //        }
@@ -473,7 +513,7 @@ public class Game{
         AtomicBoolean voteNotEnded = new AtomicBoolean( true );
         Thread votes = new Thread( () -> {
             while( true ){
-                String vote = receive();
+                String vote = read();
                 if( vote.equals( UNIQUE_CHAR + "VOTEEND" ) ){
                     synchronized( voteLock ){
                         voteNotEnded.set( false );
@@ -488,9 +528,7 @@ public class Game{
             }
         } );
         votes.start();
-        Log.i( "MyMsg", "Want to get vote." );
         String cardVoted = getClickedCard( true );
-        Log.i( "MyMsg", "Got vote." );
         gameActivity.setPlayersCardsActive( false );
         gameActivity.setTableCardsActive( false );
         if( cardVoted != null && voteNotEnded.get() ){
@@ -507,14 +545,14 @@ public class Game{
                 }
             }
         }
-        String voteResult = receive();
+        String voteResult = read();
         if( voteResult.equals( UNIQUE_CHAR + "VOTE" ) ){      // vote again
-            gameActivity.setStatementLabel( statements[ 6 ] );
+            gameActivity.setStatementLabel( getString( R.string.voteAgain ) );
             gameActivity.clearArrows();
             return -1;
         }
-        Vector< String > cardsNow = new Vector<>( Arrays.asList( receive().split( MSG_SPLITTER ) ) );
-        Vector< String > realCardsNow = new Vector<>( Arrays.asList( receive().split( MSG_SPLITTER ) ) );
+        Vector< String > cardsNow = new Vector<>( Arrays.asList( read().split( MSG_SPLITTER ) ) );
+        Vector< String > realCardsNow = new Vector<>( Arrays.asList( read().split( MSG_SPLITTER ) ) );
         for( int i = 0; i < players.size(); ++i ){
             if( players.get( i ).equals( nickname ) )
                 gameActivity.updateMyCard( cardsNow.get( i ) );
@@ -524,13 +562,20 @@ public class Game{
         for( int i = players.size(), j = 0; i < cardsNow.size(); ++i, ++j )
             gameActivity.reverseCard( UNIQUE_CHAR + "card" + j, cardsNow.get( i ) );
         int winner = whoWins( voteResult, realCardsNow );       // 9-tanner, 10-miasto, 11/12-wilkołaki/+minion
+        String winnerStr = "";
+        switch( winner ){
+            case 9: getString( R.string.tannerWins ); break;
+            case 10: getString( R.string.cityWins ); break;
+            case 11: getString( R.string.werewolvesWin ); break;
+            case 12: getString( R.string.minionWin ); break;
+        }
         if( voteResult.equals( UNIQUE_CHAR + "table" ) ){
-            gameActivity.setStatementLabel( statements[ 35 ] + " - " + statements[ winner ] + "." );
+            gameActivity.setStatementLabel( getString( R.string.nobodyKilled ) + " - " + winnerStr + "." );
         }
         else if( voteResult.equals( nickname ) )
-            gameActivity.setStatementLabel( statements[ 7 ] + " - " + statements[ winner ] + "." );
+            gameActivity.setStatementLabel( getString( R.string.youAreKilled ) + " - " + winnerStr + "." );
         else
-            gameActivity.setStatementLabel( voteResult + " " + statements[ 8 ] + " - " + statements[ winner ] + "." );
+            gameActivity.setStatementLabel( voteResult + " " + getString( R.string.hasBeenKilled ) + " - " + winnerStr + "." );
 //        switch( winner ){
 //            case 10: gameActivity.playMedia( "video/cityWins.mp4" ); break;
 //            case 11: case 12: gameActivity.playMedia( "video/werewolvesWin.mp4" ); break;
@@ -563,7 +608,6 @@ public class Game{
     public void setClickedCard( String c ){
         synchronized( clickedLock ){
             clickedCard = c;
-            Log.i( TAG, "setClickedCard: " + c );
             isClicked = true;
             clickedLock.notify();
         }

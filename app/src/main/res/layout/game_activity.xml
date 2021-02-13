@@ -38,10 +38,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginRight="40dp"
                 android:gravity="center_horizontal"
-                android:text="Current role label"
+                android:text=""
                 android:textAlignment="center"
                 android:textColor="@color/black"
-                android:textSize="20sp" />
+                android:textSize="20sp"
+                android:layout_marginEnd="40dp" />
 
         </LinearLayout>
 
@@ -72,7 +73,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="32dp"
                 android:gravity="center_horizontal"
-                android:text="Nickname"
+                android:text=""
                 android:textAlignment="center"
                 android:textColor="@color/black"
                 android:textSize="20sp" />
@@ -93,7 +94,7 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/rolesLabel"
                 android:layout_marginTop="20dp"
-                android:text="Click the card in the middle. You will became this card."
+                android:text=""
                 android:textSize="16sp" />
 
             <Switch
@@ -102,7 +103,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
                 android:layout_marginTop="10dp"
-                android:text="Hide known cards"
+                android:text="@string/hideKnownCards"
                 android:enabled="false"
                 android:theme="@style/Theme.MyApplication.PurpleAccent"
                 tools:ignore="UseSwitchCompatOrMaterialXml" />

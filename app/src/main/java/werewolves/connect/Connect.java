@@ -58,6 +58,8 @@ public class Connect implements AsyncResponse{
         Model.setNickname( nickname );
         Model.setPlayers( players );
         Model.setSocket( socket );
+        Model.setInput( input );
+        Model.setOutput( output );
         connectActivity.startActivity( intent );
     }
 
@@ -74,6 +76,7 @@ public class Connect implements AsyncResponse{
         protected String doInBackground( Void... voids ){
             try{
                 socket = new Socket();
+                socket.setKeepAlive( true );
                 socket.connect( new InetSocketAddress( ip, port ), 5000 );
                 input = new BufferedReader( new InputStreamReader( socket.getInputStream(), Charset.forName( "UTF-8" ) ) );
                 output = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), Charset.forName( "UTF-8" ) ), true );
@@ -135,7 +138,6 @@ public class Connect implements AsyncResponse{
         protected void onPostExecute( Void v ) {
             super.onPostExecute( v );
             connectActivity.started();
-            connectActivity.info( "Game started - " + card );
             delegate.onGameStarted();
         }
     }

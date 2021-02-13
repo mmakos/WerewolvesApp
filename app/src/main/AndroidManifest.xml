@@ -26,6 +26,7 @@
             android:theme="@style/Theme.MyApplication.Fullscreen"
             android:configChanges="orientation|keyboardHidden|screenSize">
         </activity>
+        <service android:name=".Game" />
     </application>
 
 </manifest>

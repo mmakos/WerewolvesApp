@@ -1,11 +1,15 @@
 package werewolves.connect;
 
 import android.annotation.SuppressLint;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
@@ -54,11 +58,9 @@ public class GameActivity extends AppCompatActivity{
         reverseCardsSwitch = findViewById( R.id.reverseCardSwitch );
         reverseCardsSwitch.setOnCheckedChangeListener( ( buttonView, isChecked ) -> hideShowCardNames( isChecked ) );
         setConsts();
-        game = new Game( this );
-        playersQuant = game.players.size();
-        createPlayersCards();
-        createTableCards();
-        game.runGame();
+
+        Intent intent = new Intent(this, Game.class);
+        bindService( intent, serviceConnection, Context.BIND_AUTO_CREATE );
     }
 
     private long backPressedTime = 0;
@@ -70,11 +72,31 @@ public class GameActivity extends AppCompatActivity{
             try{
                 Model.getSocket().close();
             } catch( IOException ignored ){}
+            if( isBounded ){
+                unbindService( serviceConnection );
+                isBounded = false;
+            }
             return;
         }
         else
             Toast.makeText( this, "Seriously? You will ruin the game!\nPsst, press two times to quit.", Toast.LENGTH_LONG ).show();
         backPressedTime = System.currentTimeMillis();
+    }
+
+    @Override
+    protected void onDestroy(){
+        if( isBounded ){
+            unbindService( serviceConnection );
+            isBounded = false;
+        }
+        super.onDestroy();
+    }
+
+    public void abort(){
+        runOnUiThread( () -> {
+            Toast.makeText( this, "Game has been aborted.", Toast.LENGTH_LONG ).show();
+            this.finish();
+        } );
     }
 
     //----------- Create Game Layout --------------
@@ -93,9 +115,9 @@ public class GameActivity extends AppCompatActivity{
     }
 
     public void createPlayersCards(){
+        playersQuant = game.players.size();
         int a = ( sceneWidth - cardWidth - getPx( 100 ) ) / 2, b = ( sceneHeight - cardHeight ) / 2, p = playersQuant;
 
-        Log.i( TAG, "createPlayersCards: scene" + sceneWidth + " x " + sceneHeight );
         playersCards.setSize( p );
         knownCards.setSize( p + 3 );
 //        for( String s : knownCards ) s = null;
@@ -156,7 +178,6 @@ public class GameActivity extends AppCompatActivity{
         button.setBackgroundResource( R.drawable.backcardsmall );
         button.setId( id );
         button.setOnClickListener( this::onClick );
-        Log.i( TAG, "Card: " + nickname + "  id: " + button.getId() );
         return button;
     }
 
@@ -195,7 +216,7 @@ public class GameActivity extends AppCompatActivity{
 
     //------------- Set GUI fields -------------
     public void setCardLabel( String str ){
-        runOnUiThread( () -> rolesLabel.setText( str ) );
+        runOnUiThread( () -> rolesLabel.setText( String.format( "%s%s", rolesLabel.getText(), str ) ) );
     }
 
     public void setStatementLabel( String str ){
@@ -375,12 +396,10 @@ public class GameActivity extends AppCompatActivity{
             card = getButtonName( btnId );
         if( card != null )
             this.game.setClickedCard( card );
-        Log.i( TAG, "Clicked card: " + card );
     }
 
-//    @FXML private AnchorPane gamePane;
-//    @FXML private MediaView video;
     private RelativeLayout gameArea;
+    private DrawerLayout drawerLayout;
     @SuppressLint( "UseSwitchCompatOrMaterialCode" )
     private Switch reverseCardsSwitch;
     private Button card0, card1, card2;
@@ -399,7 +418,21 @@ public class GameActivity extends AppCompatActivity{
     private static int buttonTextSize = 10;
     private final static float INACTIVE_OPACITY = 0.5f;
     private Game game;
-    private DrawerLayout drawerLayout;
+    private boolean isBounded = false;
+    private final ServiceConnection serviceConnection = new ServiceConnection(){
+        @Override
+        public void onServiceConnected( ComponentName name, IBinder service ){
+            Game.MyBinder binder = ( Game.MyBinder ) service;
+            game = binder.getService();
+            game.initGameActivity( GameActivity.this );
+            isBounded = true;
+        }
+
+        @Override
+        public void onServiceDisconnected( ComponentName name ){
+            isBounded = false;
+        }
+    };
 
     private static final String TAG = "MyMsg";
 }

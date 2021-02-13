@@ -67,20 +67,17 @@ public class ConnectActivity extends AppCompatActivity{
     @Override
     public void onBackPressed(){
         if( backPressedTime + 3000 > System.currentTimeMillis() || !connected ){
-            try{
-                Model.getSocket().close();
-            } catch( IOException ignored ){}
+            if( connected ){
+                try{
+                    Model.getSocket().close();
+                } catch( IOException ignored ){}
+            }
             super.onBackPressed();
             return;
         }
         else
             Toast.makeText( this, "Are you sure?\nPress again to exit.", Toast.LENGTH_SHORT ).show();
         backPressedTime = System.currentTimeMillis();
-    }
-
-    @Override
-    protected void onDestroy(){
-        super.onDestroy();
     }
 
     @SuppressLint( "SetTextI18n" )
@@ -148,5 +145,6 @@ public class ConnectActivity extends AppCompatActivity{
 
     public void started(){
         waitingForGameBar.setVisibility( View.INVISIBLE );
+        infoLabel.setText( "" );
     }
 }
