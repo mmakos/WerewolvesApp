@@ -36,45 +36,6 @@ public class Game extends Service{
     private String card;
     public String displayedCard;        // When you are copycat or paranormal then its value is different than card line above
     public String nickname;
-    public String[] statements = { "wakes up",
-            "wakes up - YOUR TURN",
-            "Vote",
-            "You became",
-            "you've been touched",
-            "Thing touches you",
-            "Vote again, decision must be unequivocal",
-            "You have been killed",
-            "has been killed",
-            "tanner wins",
-            "city wins",
-            "werewolves win",
-            "werewolves and minion win",
-            "Time's up. Card will be randomly selected.",
-            "City wakes up!",
-            "Now you need to connect with other players via outer application, such as Zoom, to establish who is who. When you will be ready, admin will press 'start vote' button and you'll be able to make your vote on person, you wish to be dead.",
-            "Choose one card from the middle. From this moment you will become the card you chose.",
-            "On the top left corner you can see which card you were, and which card you are now.",
-            "You are the only werewolf. Select one card from the middle you wish to see.",
-            "Other werewolves are",
-            "There is no werewolves among the players.",
-            "Werewolves are",
-            "Choose one card to reverse",
-            "You can give a card from the middle to one of players. You will see this card. Choose one card from the middle and then select player whom you want to give this card to.",
-            "Now choose player.",
-            "You can swap players's cards. Choose two cards to swap.",
-            "Choose second player.",
-            "Choose other player's card. If it is tanner or werewolf, you became that card (but it's not a swap). If it's not, you have to choose second card. If it's still not werewolf or tanner you play with city.",
-            "You can see, what card you are on the end.",
-            "Choose player, whose card you want to robb.",
-            "Choose player on your left or right, you want to touch. He feels your touch and can confirm it during day.",
-            "Choose two cards from the center you want to see.",
-            "Now you will see who is a Seer.",
-            "Seer is in the center or it's not in the game at all.",
-            "You have to choose second card. If it's still not werewolf or tanner you play with city.",
-            "Nobody has been killed",
-            "Hide card names",
-            "Show card names",
-            "You are" };
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
@@ -147,14 +108,12 @@ public class Game extends Service{
                 try{
                     String msg = input.readLine();
                     if( msg == null ){
-                        Log.i( TAG, "doInBackground: abort" );
                         abort();
                         return null;
                     }
                     else if( msg.equals( UNIQUE_CHAR + "ENDGAME" ) )
                         return null;
                     else if( msg.equals( UNIQUE_CHAR + "ALIVE" ) ){
-                        Log.i( TAG, "doInBackground: alive" );
                         continue;
                     }
                     msgQueue.put( msg );
@@ -569,9 +528,8 @@ public class Game extends Service{
             case 11: getString( R.string.werewolvesWin ); break;
             case 12: getString( R.string.minionWin ); break;
         }
-        if( voteResult.equals( UNIQUE_CHAR + "table" ) ){
+        if( voteResult.equals( UNIQUE_CHAR + "table" ) )
             gameActivity.setStatementLabel( getString( R.string.nobodyKilled ) + " - " + winnerStr + "." );
-        }
         else if( voteResult.equals( nickname ) )
             gameActivity.setStatementLabel( getString( R.string.youAreKilled ) + " - " + winnerStr + "." );
         else

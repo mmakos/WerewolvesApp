@@ -76,19 +76,18 @@ public class ConnectActivity extends AppCompatActivity{
             return;
         }
         else
-            Toast.makeText( this, "Are you sure?\nPress again to exit.", Toast.LENGTH_SHORT ).show();
+            Toast.makeText( this, getString( R.string.sureToExit ), Toast.LENGTH_SHORT ).show();
         backPressedTime = System.currentTimeMillis();
     }
 
-    @SuppressLint( "SetTextI18n" )
     private boolean checkNickname(){
         String nickname = nicknameField.getText().toString();
         if( nickname.length() > MAX_LOGIN_LENGTH ){
-            nicknameField.setError( "Nickname too long." );
+            nicknameField.setError( getString( R.string.nickTooLong ) );
             return false;
         }
         else if( nickname.length() <= 0 ){
-            nicknameField.setError( "This field cannot be blank." );
+            nicknameField.setError( getString( R.string.notBlank ) );
             return false;
         }
         return true;
@@ -96,19 +95,17 @@ public class ConnectActivity extends AppCompatActivity{
 
     private boolean checkGameId(){
         if( gameIdField.getText().toString().length() <= 0 ){
-            gameIdField.setError( "This field cannot be blank." );
+            gameIdField.setError( getString( R.string.notBlank ) );
             return false;
         }
         return true;
     }
 
-
-    @SuppressLint( "SetTextI18n" )
     protected void connect(){
         String login = nicknameField.getText().toString();
         boolean fieldCheck = checkGameId() & checkNickname();
         if( !fieldCheck ){
-            info( "Fields content is not valid." );
+            info( getString( R.string.notValidFields ) );
             return;
         }
         new Connect( login, gameIdField.getText().toString(), this );
@@ -118,25 +115,23 @@ public class ConnectActivity extends AppCompatActivity{
         infoLabel.setText( info );
     }
 
-    @SuppressLint( "SetTextI18n" )
     public void connected( boolean connected ){
         connectingBar.setVisibility( View.INVISIBLE );
         if( connected ){
-            connectButton.setText( "Joined" );
+            connectButton.setText( getString( R.string.joined ) );
             waitingForGameBar.setVisibility( View.VISIBLE );
             this.connected = true;
         }
         else{
-            connectButton.setText( "Join" );
+            connectButton.setText( getString( R.string.join ) );
             connectButton.setEnabled( true );
             nicknameField.setEnabled( true );
             gameIdField.setEnabled( true );
         }
     }
 
-    @SuppressLint( "SetTextI18n" )
     public void connecting(){
-        connectButton.setText( "Joining" );
+        connectButton.setText( getString( R.string.joining ));
         connectButton.setEnabled( false );
         nicknameField.setEnabled( false );
         gameIdField.setEnabled( false );

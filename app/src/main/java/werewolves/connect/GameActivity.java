@@ -79,7 +79,7 @@ public class GameActivity extends AppCompatActivity{
             return;
         }
         else
-            Toast.makeText( this, "Seriously? You will ruin the game!\nPsst, press two times to quit.", Toast.LENGTH_LONG ).show();
+            Toast.makeText( this, getString( R.string.seriouslyQuit ), Toast.LENGTH_LONG ).show();
         backPressedTime = System.currentTimeMillis();
     }
 
@@ -94,7 +94,7 @@ public class GameActivity extends AppCompatActivity{
 
     public void abort(){
         runOnUiThread( () -> {
-            Toast.makeText( this, "Game has been aborted.", Toast.LENGTH_LONG ).show();
+            Toast.makeText( this, getString( R.string.gameAborted ), Toast.LENGTH_LONG ).show();
             this.finish();
         } );
     }
@@ -122,7 +122,7 @@ public class GameActivity extends AppCompatActivity{
         knownCards.setSize( p + 3 );
 //        for( String s : knownCards ) s = null;
         yourCardPos = game.players.indexOf( game.nickname );        //start drawing cards from ours
-        Button button = getCard( "Your card", yourCardPos );
+        Button button = getCard( getString( R.string.yourCard ), yourCardPos );
 //        button.setId( Game.UNIQUE_CHAR + "You" );
 //        button.setText( "You\n\n\n\n\n." );
         double ti = Math.toRadians( -90 );

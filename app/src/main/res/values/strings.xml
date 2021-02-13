@@ -2,10 +2,25 @@
     <string name="app_name">Werewolves</string>
     <string name="nicknameHint">Nickname</string>
     <string name="gameIdHint">Game ID</string>
-    <string name="joinButtonText">Join</string>
     <string name="werewolfHeadDesc">Werewolf head</string>
     <string name="yourCardLabel">Your card is </string>
+    <string name="yourCard">You</string>
     <string name="hideKnownCards">Hide known cards</string>
+    <string name="noSuchGame">No such game. Make sure you have correct id.</string>
+    <string name="nicknameTaken">Nickname already taken.</string>
+    <string name="somethingWrong">Something went wrong.</string>
+    <string name="cannotConnect">Cannot connect to the server.</string>
+    <string name="gameWillStart">Game will start soon. Please don\'t close this window.</string>
+    <string name="nickTooLong">Nickname too long.</string>
+    <string name="notBlank">This field cannot be blank.</string>
+    <string name="sureToExit">Are you sure?\nPress again to exit.</string>
+    <string name="notValidFields">Fields content is not valid.</string>
+    <string name="joined">Joined</string>
+    <string name="join">Join</string>
+    <string name="joining">Joining</string>
+    <string name="gameAborted">The game has been aborted.</string>
+    <string name="seriouslyQuit">Seriously? You will ruin the game!\nPsst, press two times to quit.</string>
+
     <string name="wakesUp">wakes up</string>
     <string name="yourTurn">wakes up - YOUR TURN</string>
     <string name="vote">Vote</string>

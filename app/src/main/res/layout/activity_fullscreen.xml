@@ -69,7 +69,7 @@
         android:layout_marginTop="40dp"
         android:layout_centerHorizontal="true"
         android:background="@drawable/button_rounded_border"
-        android:text="@string/joinButtonText"
+        android:text="@string/join"
         android:textAllCaps="false"
         android:textSize="20sp"
         android:textColor="@drawable/button_text_color"

@@ -82,24 +82,24 @@ public class Connect implements AsyncResponse{
                 output = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), Charset.forName( "UTF-8" ) ), true );
                 sendToServer( gameID );
                 if( !receive().equals( "GOOD" ) )
-                    return "No such game. Make sure you have correct id.";
+                    return connectActivity.getString( R.string.noSuchGame );
                 sendMsg( nickname );
                 String nickInfo = receive();
                 if( nickInfo.equals( "WRONGNICK" ) )
-                    return "Nickname already taken.";
+                    return connectActivity.getString( R.string.nicknameTaken );
                 if( !nickInfo.equals( "OK" ) )
-                    return "Something went wrong.";
+                    return connectActivity.getString( R.string.somethingWrong );
             } catch( IOException e ){
-                return "Cannot connect to the server.";
+                return connectActivity.getString( R.string.cannotConnect );
             }
-            return "Game will start soon. Please don't close this window.";
+            return connectActivity.getString( R.string.gameWillStart );
         }
 
         @Override
         protected void onPostExecute( String result ) {
             super.onPostExecute( result );
             connectActivity.info( result );
-            boolean connected = result.startsWith( "Game will" );
+            boolean connected = result.equals( connectActivity.getString( R.string.noSuchGame ) );
             if( !connected ){
                 try{
                     socket.close();
