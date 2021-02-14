@@ -16,8 +16,8 @@ import android.util.TypedValue;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -27,8 +27,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-
-import com.google.android.material.circularreveal.CircularRevealWidget;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -56,6 +54,7 @@ public class GameActivity extends AppCompatActivity{
         roleDescLabel = findViewById( R.id.roleDescLabel );
         gameArea = findViewById( R.id.gameArea );
         reverseCardsSwitch = findViewById( R.id.reverseCardSwitch );
+        loadingBar = findViewById( R.id.loadingBar );
         reverseCardsSwitch.setOnCheckedChangeListener( ( buttonView, isChecked ) -> hideShowCardNames( isChecked ) );
         setConsts();
 
@@ -67,7 +66,7 @@ public class GameActivity extends AppCompatActivity{
     @SuppressLint( "ShowToast" )
     @Override
     public void onBackPressed(){
-        if( backPressedTime + 2000 > System.currentTimeMillis() || game.isEnded() ){
+        if( backPressedTime + 2000 > System.currentTimeMillis() || !game.isRunning() ){
             super.onBackPressed();
             try{
                 Model.getSocket().close();
@@ -85,6 +84,9 @@ public class GameActivity extends AppCompatActivity{
 
     @Override
     protected void onDestroy(){
+        try{
+            Model.getSocket().close();
+        } catch( IOException ignored ){}
         if( isBounded ){
             unbindService( serviceConnection );
             isBounded = false;
@@ -162,7 +164,7 @@ public class GameActivity extends AppCompatActivity{
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams( cardWidth, cardHeight );
         params.leftMargin = x;
         params.topMargin = y;
-        gameArea.addView( button, params );
+        runOnUiThread( () -> gameArea.addView( button, params ) );
     }
 
     private Button getCard( String nickname, int id ){
@@ -173,7 +175,7 @@ public class GameActivity extends AppCompatActivity{
         button.setTextColor( Color.WHITE );
         button.setAllCaps( false );
         button.setPadding( 0, 0, 0, ( int ) ( cardHeight * 0.7 ) );
-        button.setEnabled( false );
+        runOnUiThread( () -> button.setEnabled( false ) );
         button.setAlpha( INACTIVE_OPACITY );
         button.setBackgroundResource( R.drawable.backcardsmall );
         button.setId( id );
@@ -214,9 +216,17 @@ public class GameActivity extends AppCompatActivity{
         return null;
     }
 
+    public void hideLoadingBar(){
+        runOnUiThread( () -> loadingBar.setVisibility( View.INVISIBLE ) );
+    }
+
     //------------- Set GUI fields -------------
     public void setCardLabel( String str ){
         runOnUiThread( () -> rolesLabel.setText( String.format( "%s%s", rolesLabel.getText(), str ) ) );
+    }
+
+    public void setCardLabelBegin( String str ){
+        runOnUiThread( () -> rolesLabel.setText( str ) );
     }
 
     public void setStatementLabel( String str ){
@@ -402,11 +412,12 @@ public class GameActivity extends AppCompatActivity{
     private DrawerLayout drawerLayout;
     @SuppressLint( "UseSwitchCompatOrMaterialCode" )
     private Switch reverseCardsSwitch;
+    private ProgressBar loadingBar;
     private Button card0, card1, card2;
-    private Vector< Button > playersCards = new Vector<>();
+    private final Vector< Button > playersCards = new Vector<>();
     private int playersQuant;
     private int yourCardPos;
-    private Vector< Arrow > arrows = new Vector<>();
+    private final Vector< Arrow > arrows = new Vector<>();
     public Vector< String > knownCards = new Vector<>();
     private TextView rolesLabel;
     private TextView currentRoleLabel;
@@ -415,7 +426,7 @@ public class GameActivity extends AppCompatActivity{
     private static int sceneWidth, sceneHeight;
     private static int cardHeight = ( int ) ( 100 * 0.8 );
     private static int cardWidth = ( int ) ( 72 * 0.8 );
-    private static int buttonTextSize = 10;
+    private static final int buttonTextSize = 10;
     private final static float INACTIVE_OPACITY = 0.5f;
     private Game game;
     private boolean isBounded = false;
@@ -433,6 +444,4 @@ public class GameActivity extends AppCompatActivity{
             isBounded = false;
         }
     };
-
-    private static final String TAG = "MyMsg";
 }

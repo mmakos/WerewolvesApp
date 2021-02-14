@@ -11,15 +11,19 @@
     <string name="somethingWrong">Something went wrong.</string>
     <string name="cannotConnect">Cannot connect to the server.</string>
     <string name="gameWillStart">Game will start soon. Please don\'t close this window.</string>
+    <string name="waitForPlayers">Waiting for other players.</string>
+    <string name="waitForCards">Waiting for deal.</string>
     <string name="nickTooLong">Nickname too long.</string>
     <string name="notBlank">This field cannot be blank.</string>
-    <string name="sureToExit">Are you sure?\nPress again to exit.</string>
+    <string name="sureToExit">Are you sure? Tap again to exit.</string>
     <string name="notValidFields">Fields content is not valid.</string>
     <string name="joined">Joined</string>
     <string name="join">Join</string>
     <string name="joining">Joining</string>
     <string name="gameAborted">The game has been aborted.</string>
-    <string name="seriouslyQuit">Seriously? You will ruin the game!\nPsst, press two times to quit.</string>
+    <string name="seriouslyQuit">Seriously? You will ruin the game! (psst, tap two times to quit)</string>
+    <string name="emptyRolesLabel">Here you will see your roles.</string>
+    <string name="emptyRoleDesc">Here you will see, what exactly you should do. Now wait until players join, and the host runs the game.</string>
 
     <string name="wakesUp">wakes up</string>
     <string name="yourTurn">wakes up - YOUR TURN</string>

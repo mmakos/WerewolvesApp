@@ -12,15 +12,20 @@
     <string name="somethingWrong">Coś poszło nie tak.</string>
     <string name="cannotConnect">NIe można w tej chwili nawiązać połączenia z serwerem.</string>
     <string name="gameWillStart">Gra rozpocznie się niebawem, jak pozostali gracze dołączą. Nie zamykaj już gry.</string>
+    <string name="waitForPlayers">Czekam na pozostałych graczy.</string>
+    <string name="waitForCards">Czekam na rozdanie kart.</string>
     <string name="nickTooLong">Nickname za długi.</string>
     <string name="notBlank">To pole nie może być puste.</string>
-    <string name="sureToExit">Czy na prewno chcesz opuścić grę?\nDotknij ponownie, aby wyjść.</string>
+    <string name="sureToExit">Czy na prewno chcesz opuścić grę? Dotknij ponownie, aby wyjść.</string>
     <string name="notValidFields">Zawartość pól jest niepoprawna.</string>
     <string name="joined">Dołączono</string>
     <string name="join">Dołącz</string>
     <string name="joining">Dołączam</string>
     <string name="gameAborted">Gra została przerwana.</string>
-    <string name="seriouslyQuit">Naprawdę? Zepsujesz grę!\nPsst, dotknij dwa razy, aby wyjść.</string>
+    <string name="seriouslyQuit">Naprawdę? Zepsujesz wszystkim grę! (psst, dotknij dwa razy, aby wyjść)</string>
+    <string name="emptyRolesLabel">Tutaj zobaczysz wszystkie swoje role.</string>
+    <string name="emptyRoleDesc">Tutaj znajdziesz informacje o tym, co dokładnie powinieneś zrobić. Teraz poczekaj, aż pozostali gracze dołączą i host rozpocznie grę.</string>
+
     <string name="wakesUp">się budzi</string>
     <string name="yourTurn">się budzi - TWÓJ RUCH</string>
     <string name="vote">Głosowanie</string>

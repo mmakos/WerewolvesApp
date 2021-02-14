@@ -1,18 +1,16 @@
 package werewolves.connect;
+
 import android.app.Service;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Binder;
-import android.os.Handler;
 import android.os.IBinder;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.Socket;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Vector;
@@ -24,7 +22,7 @@ public class Game extends Service{
     private static final String TAG = "MyMsg";
     private final Object clickedLock = new Object();        // to synchronize clicked card moment
     private Boolean isClicked = false;
-    private boolean isEnded = false;
+    private boolean isRunning = false;
     private String clickedCard;
     public static final transient String COM_SPLITTER = String.valueOf( ( char )28 );
     public final static transient String MSG_SPLITTER = String.valueOf( ( char )29 );
@@ -32,11 +30,10 @@ public class Game extends Service{
     private final static int KEEP_ALIVE_TIME = 300; // in seconds
     public final static transient int MAX_ROLE_TIME = 30;
     private static final transient boolean minionWinsWhenHeDies = true;
-    public Vector< String > players;
+    public Vector< String > players = new Vector<>();
     private String card;
     public String displayedCard;        // When you are copycat or paranormal then its value is different than card line above
     public String nickname;
-    private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
     GameActivity gameActivity;
@@ -45,17 +42,11 @@ public class Game extends Service{
 
     public void initGameActivity( GameActivity gameActivity ){
         this.gameActivity = gameActivity;
-        this.card = Model.getCard();
         this.nickname = Model.getNickname();
-        this.players = Model.getPlayers();
-        this.socket = Model.getSocket();
         this.input = Model.getInput();
         this.output = Model.getOutput();
-        gameActivity.createPlayersCards();
-        gameActivity.createTableCards();
-        gameActivity.setCardLabel( " " + card.split( "_" )[ 0 ] );
+        gameActivity.setStatementLabel(getString( R.string.waitForPlayers ) );
         gameActivity.setNicknameLabel( nickname );
-        gameActivity.updateMyCard( card );
 
         new GameNet().execute();
 
@@ -70,21 +61,11 @@ public class Game extends Service{
             }
         } );
         keepAlive.start();
-        //----------- keep alive ---------------
-//        Handler keepAlive = new Handler();
-//        final Runnable r = new Runnable(){
-//            public void run() {
-//                Log.i( TAG, "run: print alive" );
-//                output.println( UNIQUE_CHAR + "ALIVE" );
-//                keepAlive.postDelayed( this, KEEP_ALIVE_TIME * 1000 );
-//            }
-//        };
-//        keepAlive.postDelayed( r, KEEP_ALIVE_TIME * 1000 );
         gameLogic();
     }
 
-    public boolean isEnded(){
-        return isEnded;
+    public boolean isRunning(){
+        return isRunning;
     }
 
     private final IBinder binder = new MyBinder();
@@ -104,6 +85,19 @@ public class Game extends Service{
     private class GameNet extends AsyncTask< Void, Void, Void >{
         @Override
         protected Void doInBackground( Void... voids ){
+            try{
+                getPlayers();
+                gameActivity.createPlayersCards();
+                isRunning = true;       // now you shouldn't exit the game
+                gameActivity.setStatementLabel(getString( R.string.waitForCards ) );
+                getCard();
+                gameActivity.createTableCards();
+                gameActivity.setCardLabelBegin( getString( R.string.yourCardLabel ) + " " + card.split( "_" )[ 0 ] );
+                gameActivity.updateMyCard( card );
+                gameActivity.hideLoadingBar();
+            } catch( IOException e ){
+                return null;
+            }
             while( true ){
                 try{
                     String msg = input.readLine();
@@ -120,6 +114,16 @@ public class Game extends Service{
                 } catch( IOException | InterruptedException ignored ){}
             }
         }
+    }
+
+    private void getPlayers() throws IOException{
+        String msg = input.readLine();
+        String[] playersTab = msg.split( MSG_SPLITTER, 0 );
+        players.addAll( Arrays.asList( playersTab ) );
+    }
+
+    private void getCard() throws IOException{
+        card = input.readLine();
     }
 
     private void abort(){
@@ -157,11 +161,7 @@ public class Game extends Service{
                 gameActivity.setStatementLabel( msgCard + " " + getString( R.string.wakesUp ) );
                 if( msg.equals( card.split( "_" )[ 0 ].toUpperCase() ) || ( msg.equals( "WEREWOLF" ) && card.equals( "Mystic wolf" ) ) ){
                     gameActivity.setStatementLabel( msgCard + " " + getString( R.string.yourTurn ) );
-                    try {
-                        proceedCard( msgCard );
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    proceedCard( msgCard );
                 }
                 if( msg.equals( "THING" ) )
                     waitForTingsTouch();
@@ -169,13 +169,13 @@ public class Game extends Service{
             if( read().equals( UNIQUE_CHAR + "VOTE" ) ){
                 gameActivity.setStatementLabel( getString( R.string.vote ) );
                 while( vote() != 0 );       // Not busy waiting, just repeat voting until it returns 0.
-                isEnded = true;
+                isRunning = false;
             }
         } );
         gameLogic.start();
     }
 
-    private void proceedCard( String card ) throws InterruptedException {
+    private void proceedCard( String card ){
 //        try{
 //            roleSignal.seek( Duration.ZERO );
 //            roleSignal.play();

@@ -3,13 +3,9 @@ package werewolves.connect;
 import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Vector;
-import java.util.concurrent.BlockingQueue;
 
 public class Model{
     private static Socket socket;
-    private static Vector< String > players;
-    private static String card;
     private static String nickname;
     private static BufferedReader input;
     private static PrintWriter output;
@@ -20,22 +16,6 @@ public class Model{
 
     public static synchronized void setSocket( Socket socket ){
         Model.socket = socket;
-    }
-
-    public static synchronized String getCard(){
-        return card;
-    }
-
-    public static synchronized void setCard( String card ){
-        Model.card = card;
-    }
-
-    public static synchronized Vector< String > getPlayers(){
-        return players;
-    }
-
-    public static synchronized void setPlayers( Vector< String > players ){
-        Model.players = players;
     }
 
     public static synchronized String getNickname(){
