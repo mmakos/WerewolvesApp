@@ -36,7 +36,7 @@
     <string name="minionWin">werewolves and minion win</string>
     <string name="timeUp">Time\'s up. Card will be randomly selected.</string>
     <string name="cityWakeUp">City wakes up!</string>
-    <string name="connectViaZoom">Now you need to connect with other players via outer application, such as Zoom, to establish who is who. When you will be ready, admin will press \'start vote' button and you'll be able to make your vote on person, you wish to be dead.</string>
+    <string name="connectViaZoom">Now you need to connect with other players via outer application, such as Zoom, to establish who is who. When you will be ready, admin will press \'start vote\' button and you\'ll be able to make your vote on person, you wish to be dead.</string>
     <string name="copycat1">Choose one card from the middle. From this moment you will become the card you chose.</string>
     <string name="copycat2">On the top left corner you can see which card you were, and which card you are now.</string>
     <string name="werewolf1">You are the only werewolf. Select one card from the middle you wish to see.</string>
@@ -48,7 +48,7 @@
     <string name="witch2">Now choose player.</string>
     <string name="troublemaker1">You can swap players\'s cards. Choose two cards to swap.</string>
     <string name="troublemaker2">Choose second player.</string>
-    <string name="paranormal1">Choose other player\'s card. If it is tanner or werewolf, you became that card (but it\'s not a swap). If it\'s not, you have to choose second card. If it's still not werewolf or tanner you play with city.</string>
+    <string name="paranormal1">Choose other player\'s card. If it is tanner or werewolf, you became that card (but it\'s not a swap). If it\'s not, you have to choose second card. If it\'s still not werewolf or tanner you play with city.</string>
     <string name="insomniac">You can see, what card you are on the end.</string>
     <string name="robber">Choose player, whose card you want to robb.</string>
     <string name="thing">Choose player on your left or right, you want to touch. He feels your touch and can confirm it during day.</string>

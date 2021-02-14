@@ -99,7 +99,7 @@ public class Connect implements AsyncResponse{
         protected void onPostExecute( String result ) {
             super.onPostExecute( result );
             connectActivity.info( result );
-            boolean connected = result.equals( connectActivity.getString( R.string.noSuchGame ) );
+            boolean connected = result.equals( connectActivity.getString( R.string.gameWillStart ) );
             if( !connected ){
                 try{
                     socket.close();
