@@ -1,21 +1,30 @@
 package werewolves.connect;
 
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -302,9 +311,8 @@ public class GameActivity extends AppCompatActivity{
     }
 
     public void updateMyCard( String card ){
-        Button btn = playersCards.get( game.players.indexOf( game.nickname ) );
+        reverseCard( game.nickname, card );
         game.displayedCard = card;
-        runOnUiThread( () -> btn.setBackgroundResource( getDrawableId( "frontcardbig" + card.split( " " )[ 0 ].toLowerCase()) ) );
     }
 
     public void reverseCard( String player, String card ){
@@ -320,9 +328,40 @@ public class GameActivity extends AppCompatActivity{
         runOnUiThread( () -> {
             if( !reverseCardsSwitch.isEnabled() )
                 reverseCardsSwitch.setEnabled( true );
-            btn.setBackgroundResource( getDrawableId( "frontcardbig" + card.split( " " )[ 0 ].toLowerCase() ) );
-            btn.setAlpha( 1.0f );
+            ObjectAnimator animation = ObjectAnimator.ofFloat( btn, "rotationY", 0.0f, 90f );
+            animation.setDuration( 500 );
+            animation.setInterpolator( new AccelerateInterpolator() );
+            ObjectAnimator anim2 = ObjectAnimator.ofFloat( btn, "rotationY", 270f, 360f );
+            anim2.setInterpolator( new DecelerateInterpolator() );
+            anim2.setDuration( 500 );
+            anim2.setStartDelay( 500 );
+            animation.start();
+            anim2.start();
+            new Handler().postDelayed( () -> {
+                btn.setBackgroundResource( getDrawableId( "frontcardbig" + card.split( " " )[ 0 ].toLowerCase() ) );
+                btn.setAlpha( 1.0f );
+            }, 500 );
         } );
+    }
+    public static void ImageViewAnimatedChange( Context c, final ImageView v, final Bitmap new_image) {
+        final Animation anim_out = AnimationUtils.loadAnimation(c, android.R.anim.fade_out);
+        final Animation anim_in  = AnimationUtils.loadAnimation(c, android.R.anim.fade_in);
+        anim_out.setAnimationListener(new Animation.AnimationListener()
+        {
+            @Override public void onAnimationStart(Animation animation) {}
+            @Override public void onAnimationRepeat(Animation animation) {}
+            @Override public void onAnimationEnd(Animation animation)
+            {
+                v.setImageBitmap(new_image);
+                anim_in.setAnimationListener(new Animation.AnimationListener() {
+                    @Override public void onAnimationStart(Animation animation) {}
+                    @Override public void onAnimationRepeat(Animation animation) {}
+                    @Override public void onAnimationEnd(Animation animation) {}
+                });
+                v.startAnimation(anim_in);
+            }
+        });
+        v.startAnimation(anim_out);
     }
 
     public void hideShowCardNames( boolean isChecked ){
