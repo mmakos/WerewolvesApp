@@ -1,7 +1,9 @@
 package werewolves.connect;
 
+import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.pm.ActivityInfo;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;

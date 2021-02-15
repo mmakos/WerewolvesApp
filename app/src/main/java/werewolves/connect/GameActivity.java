@@ -1,5 +1,7 @@
 package werewolves.connect;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
@@ -333,16 +335,14 @@ public class GameActivity extends AppCompatActivity{
         }
         knownCards.set( idx, card );
         int TIME = 1000 / 2;
+        ObjectAnimator animation = ObjectAnimator.ofFloat( btn, "rotationY", 0.0f, 90f ).setDuration( TIME );
+        animation.setInterpolator( new AccelerateInterpolator() );
+        ObjectAnimator anim2 = ObjectAnimator.ofFloat( btn, "rotationY", 270f, 360f ).setDuration( TIME );
+        anim2.setInterpolator( new DecelerateInterpolator() );
+        anim2.setStartDelay( TIME );
         runOnUiThread( () -> {
-            if( !reverseCardsSwitch.isEnabled() )
+            if( !reverseCardsSwitch.isEnabled() || !player.equals( game.nickname ) )
                 reverseCardsSwitch.setEnabled( true );
-            ObjectAnimator animation = ObjectAnimator.ofFloat( btn, "rotationY", 0.0f, 90f );
-            animation.setDuration( TIME );
-            animation.setInterpolator( new AccelerateInterpolator() );
-            ObjectAnimator anim2 = ObjectAnimator.ofFloat( btn, "rotationY", 270f, 360f );
-            anim2.setInterpolator( new DecelerateInterpolator() );
-            anim2.setDuration( TIME );
-            anim2.setStartDelay( TIME );
             animation.start();
             anim2.start();
             new Handler().postDelayed( () -> {
@@ -352,8 +352,26 @@ public class GameActivity extends AppCompatActivity{
         } );
     }
 
+    public void dereverse( Button card ){
+        int TIME = 1000 / 2;
+        ObjectAnimator rot1 = ObjectAnimator.ofFloat( card, "rotationY", 0.0f, -90f ).setDuration( TIME );
+        ObjectAnimator rot2 = ObjectAnimator.ofFloat( card, "rotationY", 90f, 0f ).setDuration( TIME );
+        rot1.setInterpolator( new AccelerateInterpolator() );
+        rot2.setInterpolator( new DecelerateInterpolator() );
+        rot2.setStartDelay( TIME );
+        runOnUiThread( () -> {
+            rot1.start();
+            rot2.start();
+            new Handler().postDelayed( () -> {
+                card.setBackgroundResource( R.drawable.backcardsmall );
+                if( !card.isEnabled() )
+                    card.setAlpha( INACTIVE_OPACITY );
+            }, TIME );
+        } );
+    }
+
     public void swapCardsAnimation( String player1, String player2 ){
-        int TIME = 2000;
+        int TIME = 1200;
         Button c1, c2;
         int idx1, idx2;
         switch( player1 ){
@@ -374,40 +392,33 @@ public class GameActivity extends AppCompatActivity{
         Button card1 = c1;
         Button card2 = c2;
         CharSequence card1Text = card1.getText(), card2Text = card2.getText();
-        runOnUiThread( () -> {
-            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ){
-                card1.setElevation( 2f );
-                card2.setElevation( 1f );
-            }
-            card1.setText( "" );
-            card2.setText( "" );
-            float deltaX = card2.getX() - card1.getX();
-            float deltaY = card2.getY() - card1.getY();
-            // Translation
-            ObjectAnimator.ofFloat( card1, "translationX", deltaX ).setDuration( TIME ).start();
-            ObjectAnimator.ofFloat( card1, "translationY", deltaY ).setDuration( TIME ).start();
-            ObjectAnimator.ofFloat( card2, "translationX", -deltaX ).setDuration( TIME ).start();
-            ObjectAnimator.ofFloat( card2, "translationY", -deltaY ).setDuration( TIME ).start();
-            // Scale down card1
-            ObjectAnimator.ofFloat( card1, "scaleX", 0.8f ).setDuration( TIME / 2 ).start();
-            ObjectAnimator.ofFloat( card1, "scaleY", 0.8f ).setDuration( TIME / 2 ).start();
-            ObjectAnimator x = ObjectAnimator.ofFloat( card1, "scaleX", 1.0f ).setDuration( TIME / 2 );
-            ObjectAnimator y = ObjectAnimator.ofFloat( card1, "scaleY", 1.0f ).setDuration( TIME / 2 );
-            x.setStartDelay( TIME / 2 );
-            y.setStartDelay( TIME / 2 );
-            x.start();
-            y.start();
-            // Scale up card2
-            ObjectAnimator.ofFloat( card2, "scaleX", 1.2f ).setDuration( TIME / 2 ).start();
-            ObjectAnimator.ofFloat( card2, "scaleY", 1.2f ).setDuration( TIME / 2 ).start();
-            ObjectAnimator x2 = ObjectAnimator.ofFloat( card2, "scaleX", 1.0f ).setDuration( TIME / 2 );
-            ObjectAnimator y2 = ObjectAnimator.ofFloat( card2, "scaleY", 1.0f ).setDuration( TIME / 2 );
-            x2.setStartDelay( TIME / 2 );
-            y2.setStartDelay( TIME / 2 );
-            x2.start();
-            y2.start();
-            // restore
-            new Handler().postDelayed( () -> {
+        float deltaX = card2.getX() - card1.getX();
+        float deltaY = card2.getY() - card1.getY();
+        // Translation
+        AnimatorSet translate = new AnimatorSet();
+        translate.setDuration( TIME ).playTogether(
+                ObjectAnimator.ofFloat( card1, "translationX", deltaX ),
+                ObjectAnimator.ofFloat( card1, "translationY", deltaY ),
+                ObjectAnimator.ofFloat( card2, "translationX", -deltaX ),
+                ObjectAnimator.ofFloat( card2, "translationY", -deltaY ) );
+        // Scale down card1
+        AnimatorSet scale1 = new AnimatorSet();
+        scale1.setDuration( TIME / 2 ).playTogether(
+                ObjectAnimator.ofFloat( card1, "scaleX", 0.8f ),
+                ObjectAnimator.ofFloat( card1, "scaleY", 0.8f ),
+                ObjectAnimator.ofFloat( card2, "scaleX", 1.2f ),
+                ObjectAnimator.ofFloat( card2, "scaleY", 1.2f ) );
+        AnimatorSet scale2 = new AnimatorSet();
+        scale2.setDuration( TIME / 2 ).playTogether(
+                ObjectAnimator.ofFloat( card1, "scaleX", 1.0f ),
+                ObjectAnimator.ofFloat( card1, "scaleY", 1.0f ),
+                ObjectAnimator.ofFloat( card2, "scaleX", 1.0f ),
+                ObjectAnimator.ofFloat( card2, "scaleY", 1.0f ) );
+        scale2.setStartDelay( TIME / 2 );
+        translate.addListener( new Animator.AnimatorListener(){
+            @Override public void onAnimationStart( Animator animation ){}
+            @Override
+            public void onAnimationEnd( Animator animation ){
                 // change backgrounds
                 Drawable tempD = card1.getBackground();
                 card1.setBackground( card2.getBackground() );
@@ -424,24 +435,32 @@ public class GameActivity extends AppCompatActivity{
                 // restore names
                 card1.setText( card1Text );
                 card2.setText( card2Text );
-            }, TIME + 2 );
+            }
+            @Override public void onAnimationCancel( Animator animation ){}
+            @Override public void onAnimationRepeat( Animator animation ){}
+        } );
+        runOnUiThread( () -> {
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ){
+                card1.setElevation( 2f );
+                card2.setElevation( 1f );
+            }
+            card1.setText( "" );
+            card2.setText( "" );
+            translate.start();
+            scale1.start();
+            scale2.start();
         } );
     }
 
     public void hideShowCardNames( boolean isChecked ){
         runOnUiThread( () -> {
             if( isChecked ){
-                card0.setBackgroundResource( R.drawable.backcardsmall );
-                card1.setBackgroundResource( R.drawable.backcardsmall );
-                card2.setBackgroundResource( R.drawable.backcardsmall );
-                if( !card0.isEnabled() ) card0.setAlpha( INACTIVE_OPACITY );
-                if( !card1.isEnabled() ) card1.setAlpha( INACTIVE_OPACITY );
-                if( !card2.isEnabled() ) card2.setAlpha( INACTIVE_OPACITY );
+                if( knownCards.get( playersQuant ) != null ) dereverse( card0 );
+                if( knownCards.get( playersQuant + 1 ) != null ) dereverse( card1 );
+                if( knownCards.get( playersQuant + 2 ) != null ) dereverse( card2 );
                 for( int i = 0; i < playersQuant; ++i ){
-                    if( knownCards.get( i ) != null ){
-                        playersCards.get( i ).setBackgroundResource( R.drawable.backcardsmall );
-                        if( !playersCards.get( i ).isEnabled() ) playersCards.get( i ).setAlpha( INACTIVE_OPACITY );
-                    }
+                    if( knownCards.get( i ) != null )
+                        dereverse( playersCards.get( i ) );
                 }
             } else{
                 for( int i = 0; i < playersQuant; ++i ){

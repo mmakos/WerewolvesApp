@@ -92,7 +92,6 @@ public class Game extends Service{
                 isRunning = true;       // now you shouldn't exit the game
                 gameActivity.setStatementLabel(getString( R.string.waitForCards ) );
                 getCard();
-                gameActivity.swapCardsAnimation( players.get( 0 ), players.get( 1 ) );
                 gameActivity.createTableCards();
                 gameActivity.setCardLabelBegin( getString( R.string.yourCardLabel ) + " " + card.split( "_" )[ 0 ] );
                 gameActivity.updateMyCard( card );
@@ -529,10 +528,10 @@ public class Game extends Service{
         int winner = whoWins( voteResult, realCardsNow );       // 9-tanner, 10-miasto, 11/12-wilkołaki/+minion
         String winnerStr = "";
         switch( winner ){
-            case 9: getString( R.string.tannerWins ); break;
-            case 10: getString( R.string.cityWins ); break;
-            case 11: getString( R.string.werewolvesWin ); break;
-            case 12: getString( R.string.minionWin ); break;
+            case 9: winnerStr = getString( R.string.tannerWins ); break;
+            case 10: winnerStr = getString( R.string.cityWins ); break;
+            case 11: winnerStr = getString( R.string.werewolvesWin ); break;
+            case 12: winnerStr = getString( R.string.minionWin ); break;
         }
         if( voteResult.equals( UNIQUE_CHAR + "table" ) )
             gameActivity.setStatementLabel( getString( R.string.nobodyKilled ) + " - " + winnerStr + "." );
