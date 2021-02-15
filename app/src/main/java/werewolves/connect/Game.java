@@ -19,10 +19,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Game extends Service{
-    private static final String TAG = "MyMsg";
     private final Object clickedLock = new Object();        // to synchronize clicked card moment
     private Boolean isClicked = false;
     private boolean isRunning = false;
+    private boolean isEnded = false;
     private String clickedCard;
     public static final transient String COM_SPLITTER = String.valueOf( ( char )28 );
     public final static transient String MSG_SPLITTER = String.valueOf( ( char )29 );
@@ -67,6 +67,7 @@ public class Game extends Service{
     public boolean isRunning(){
         return isRunning;
     }
+    public boolean isEnded(){ return isEnded; }
 
     private final IBinder binder = new MyBinder();
     @Nullable
@@ -91,6 +92,7 @@ public class Game extends Service{
                 isRunning = true;       // now you shouldn't exit the game
                 gameActivity.setStatementLabel(getString( R.string.waitForCards ) );
                 getCard();
+                gameActivity.swapCardsAnimation( players.get( 0 ), players.get( 1 ) );
                 gameActivity.createTableCards();
                 gameActivity.setCardLabelBegin( getString( R.string.yourCardLabel ) + " " + card.split( "_" )[ 0 ] );
                 gameActivity.updateMyCard( card );
@@ -170,6 +172,7 @@ public class Game extends Service{
                 gameActivity.setStatementLabel( getString( R.string.vote ) );
                 while( vote() != 0 );       // Not busy waiting, just repeat voting until it returns 0.
                 isRunning = false;
+                isEnded = true;
             }
         } );
         gameLogic.start();
@@ -320,8 +323,9 @@ public class Game extends Service{
             gameActivity.setRoleInfo( getString( R.string.timeUp ) );
         }
         gameActivity.setPlayersCardsActive( false );
-        gameActivity.hideCenterCard( firstClickedCard );
-        gameActivity.reverseCard( cardClick, chosenCard );
+        gameActivity.swapCardsAnimation( cardClick, firstClickedCard );
+//        gameActivity.hideCenterCard( firstClickedCard );
+//        gameActivity.reverseCard( cardClick, chosenCard );
         sendMsg( cardClick );
     }
 
@@ -337,13 +341,14 @@ public class Game extends Service{
         }
         String cards = cardClick + MSG_SPLITTER;
         gameActivity.setPlayerCardActive( players.indexOf( cardClick ), false );
-        cardClick = getClickedCard();
-        if( cardClick == null ){
-            cardClick = getRandomPlayerCard();
+        String cardClick2 = getClickedCard();
+        if( cardClick2 == null ){
+            cardClick2 = getRandomPlayerCard();
             gameActivity.setRoleInfo( getString( R.string.timeUp ) );
         }
-        cards += cardClick;
+        cards += cardClick2;
         gameActivity.setPlayersCardsActive( false );
+        gameActivity.swapCardsAnimation( cardClick, cardClick2 );
         sendMsg( cards );
     }
 
@@ -428,8 +433,9 @@ public class Game extends Service{
         String msg2 = msg.split( "_" )[ 0 ];
         gameActivity.setCardLabel( " -> " + msg2 );
         gameActivity.setStatementLabel( getString( R.string.youBecame ) + " " + msg2 );
-        gameActivity.reverseCard( cardClick, displayedCard );
-        gameActivity.updateMyCard( msg );
+        gameActivity.reverseCard( cardClick, msg );
+        gameActivity.swapCardsAnimation( cardClick, nickname );
+//        gameActivity.updateMyCard( msg );
     }
 
     void makeThing(){

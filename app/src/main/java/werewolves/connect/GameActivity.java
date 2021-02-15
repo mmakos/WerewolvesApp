@@ -9,6 +9,7 @@ import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,6 +34,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -40,6 +42,8 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Vector;
+
+import javax.security.auth.login.LoginException;
 
 public class GameActivity extends AppCompatActivity{
 
@@ -75,7 +79,7 @@ public class GameActivity extends AppCompatActivity{
     @SuppressLint( "ShowToast" )
     @Override
     public void onBackPressed(){
-        if( backPressedTime + 2000 > System.currentTimeMillis() || !game.isRunning() ){
+        if( backPressedTime + 1000 > System.currentTimeMillis() || game.isEnded() ){
             super.onBackPressed();
             try{
                 Model.getSocket().close();
@@ -86,8 +90,10 @@ public class GameActivity extends AppCompatActivity{
             }
             return;
         }
-        else
+        else if( game.isRunning() )
             Toast.makeText( this, getString( R.string.seriouslyQuit ), Toast.LENGTH_LONG ).show();
+        else if( !game.isEnded() )
+            Toast.makeText( this, getString( R.string.sureToExit ), Toast.LENGTH_LONG ).show();
         backPressedTime = System.currentTimeMillis();
     }
 
@@ -312,6 +318,7 @@ public class GameActivity extends AppCompatActivity{
 
     public void updateMyCard( String card ){
         reverseCard( game.nickname, card );
+        knownCards.set( game.players.indexOf( game.nickname ), null );
         game.displayedCard = card;
     }
 
@@ -325,43 +332,100 @@ public class GameActivity extends AppCompatActivity{
             default: idx = game.players.indexOf( player ); btn = playersCards.get( idx );
         }
         knownCards.set( idx, card );
+        int TIME = 1000 / 2;
         runOnUiThread( () -> {
             if( !reverseCardsSwitch.isEnabled() )
                 reverseCardsSwitch.setEnabled( true );
             ObjectAnimator animation = ObjectAnimator.ofFloat( btn, "rotationY", 0.0f, 90f );
-            animation.setDuration( 500 );
+            animation.setDuration( TIME );
             animation.setInterpolator( new AccelerateInterpolator() );
             ObjectAnimator anim2 = ObjectAnimator.ofFloat( btn, "rotationY", 270f, 360f );
             anim2.setInterpolator( new DecelerateInterpolator() );
-            anim2.setDuration( 500 );
-            anim2.setStartDelay( 500 );
+            anim2.setDuration( TIME );
+            anim2.setStartDelay( TIME );
             animation.start();
             anim2.start();
             new Handler().postDelayed( () -> {
                 btn.setBackgroundResource( getDrawableId( "frontcardbig" + card.split( " " )[ 0 ].toLowerCase() ) );
                 btn.setAlpha( 1.0f );
-            }, 500 );
+            }, TIME );
         } );
     }
-    public static void ImageViewAnimatedChange( Context c, final ImageView v, final Bitmap new_image) {
-        final Animation anim_out = AnimationUtils.loadAnimation(c, android.R.anim.fade_out);
-        final Animation anim_in  = AnimationUtils.loadAnimation(c, android.R.anim.fade_in);
-        anim_out.setAnimationListener(new Animation.AnimationListener()
-        {
-            @Override public void onAnimationStart(Animation animation) {}
-            @Override public void onAnimationRepeat(Animation animation) {}
-            @Override public void onAnimationEnd(Animation animation)
-            {
-                v.setImageBitmap(new_image);
-                anim_in.setAnimationListener(new Animation.AnimationListener() {
-                    @Override public void onAnimationStart(Animation animation) {}
-                    @Override public void onAnimationRepeat(Animation animation) {}
-                    @Override public void onAnimationEnd(Animation animation) {}
-                });
-                v.startAnimation(anim_in);
+
+    public void swapCardsAnimation( String player1, String player2 ){
+        int TIME = 2000;
+        Button c1, c2;
+        int idx1, idx2;
+        switch( player1 ){
+            case ( char )2 + "card0": c1 = card0; idx1 = playersQuant; break;
+            case ( char )2 + "card1": c1 = card1; idx1 = playersQuant + 1; break;
+            case ( char )2 + "card2": c1 = card2; idx1 = playersQuant + 2; break;
+            default: idx1 = game.players.indexOf( player1 ); c1 = playersCards.get( idx1 );
+        }
+        switch( player2 ){
+            case ( char )2 + "card0": c2 = card0; idx2 = playersQuant; break;
+            case ( char )2 + "card1": c2 = card1; idx2 = playersQuant + 1; break;
+            case ( char )2 + "card2": c2 = card2; idx2 = playersQuant + 2; break;
+            default: idx2 = game.players.indexOf( player2 ); c2 = playersCards.get( idx2 );
+        }
+        String tempC = knownCards.get( idx1 );
+        knownCards.set( idx1, knownCards.get( idx2 ) );
+        knownCards.set( idx2, tempC );
+        Button card1 = c1;
+        Button card2 = c2;
+        CharSequence card1Text = card1.getText(), card2Text = card2.getText();
+        runOnUiThread( () -> {
+            if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ){
+                card1.setElevation( 2f );
+                card2.setElevation( 1f );
             }
-        });
-        v.startAnimation(anim_out);
+            card1.setText( "" );
+            card2.setText( "" );
+            float deltaX = card2.getX() - card1.getX();
+            float deltaY = card2.getY() - card1.getY();
+            // Translation
+            ObjectAnimator.ofFloat( card1, "translationX", deltaX ).setDuration( TIME ).start();
+            ObjectAnimator.ofFloat( card1, "translationY", deltaY ).setDuration( TIME ).start();
+            ObjectAnimator.ofFloat( card2, "translationX", -deltaX ).setDuration( TIME ).start();
+            ObjectAnimator.ofFloat( card2, "translationY", -deltaY ).setDuration( TIME ).start();
+            // Scale down card1
+            ObjectAnimator.ofFloat( card1, "scaleX", 0.8f ).setDuration( TIME / 2 ).start();
+            ObjectAnimator.ofFloat( card1, "scaleY", 0.8f ).setDuration( TIME / 2 ).start();
+            ObjectAnimator x = ObjectAnimator.ofFloat( card1, "scaleX", 1.0f ).setDuration( TIME / 2 );
+            ObjectAnimator y = ObjectAnimator.ofFloat( card1, "scaleY", 1.0f ).setDuration( TIME / 2 );
+            x.setStartDelay( TIME / 2 );
+            y.setStartDelay( TIME / 2 );
+            x.start();
+            y.start();
+            // Scale up card2
+            ObjectAnimator.ofFloat( card2, "scaleX", 1.2f ).setDuration( TIME / 2 ).start();
+            ObjectAnimator.ofFloat( card2, "scaleY", 1.2f ).setDuration( TIME / 2 ).start();
+            ObjectAnimator x2 = ObjectAnimator.ofFloat( card2, "scaleX", 1.0f ).setDuration( TIME / 2 );
+            ObjectAnimator y2 = ObjectAnimator.ofFloat( card2, "scaleY", 1.0f ).setDuration( TIME / 2 );
+            x2.setStartDelay( TIME / 2 );
+            y2.setStartDelay( TIME / 2 );
+            x2.start();
+            y2.start();
+            // restore
+            new Handler().postDelayed( () -> {
+                // change backgrounds
+                Drawable tempD = card1.getBackground();
+                card1.setBackground( card2.getBackground() );
+                card2.setBackground( tempD );
+                // change alpha
+                float tempA = card1.getAlpha();
+                card1.setAlpha( card2.getAlpha() );
+                card2.setAlpha( tempA );
+                // restore positions
+                card1.setTranslationX( .0f );
+                card1.setTranslationY( .0f );
+                card2.setTranslationX( .0f );
+                card2.setTranslationY( .0f );
+                // restore names
+                card1.setText( card1Text );
+                card2.setText( card2Text );
+            }, TIME + 2 );
+        } );
     }
 
     public void hideShowCardNames( boolean isChecked ){
@@ -462,9 +526,9 @@ public class GameActivity extends AppCompatActivity{
     private TextView currentRoleLabel;
     private TextView nicknameLabel;
     private TextView roleDescLabel;
-    private static int sceneWidth, sceneHeight;
-    private static int cardHeight = ( int ) ( 100 * 0.8 );
-    private static int cardWidth = ( int ) ( 72 * 0.8 );
+    private int sceneWidth, sceneHeight;
+    private int cardHeight = ( int ) ( 100 * 0.8 );
+    private int cardWidth = ( int ) ( 72 * 0.8 );
     private static final int buttonTextSize = 10;
     private final static float INACTIVE_OPACITY = 0.5f;
     private Game game;
