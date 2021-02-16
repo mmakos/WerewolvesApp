@@ -129,7 +129,7 @@ public class Game extends Service{
     }
     public boolean isEnded(){ return isEnded; }
     public void mute( boolean muted ){
-        if( muted )
+        if( muted && mediaplayer != null )
             mediaplayer.stop();
         isMuted = muted;
     }
@@ -186,12 +186,20 @@ public class Game extends Service{
 
     private void getPlayers() throws IOException{
         String msg = input.readLine();
+        if( msg == null ){
+            abort();
+            throw new IOException( "Game aborted" );
+        }
         String[] playersTab = msg.split( MSG_SPLITTER, 0 );
         players.addAll( Arrays.asList( playersTab ) );
     }
 
     private void getCard() throws IOException{
         card = input.readLine();
+        if( card == null ){
+            abort();
+            throw new IOException( "Game aborted" );
+        }
     }
 
     private void abort(){

@@ -114,37 +114,71 @@
                     android:layout_height="2dp"
                     android:layout_marginTop="10dp"
                     android:background="@color/black"/>
-                <Switch
-                    android:id="@+id/reverseCardSwitch"
-                    android:layout_below="@+id/splitLine"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                <RelativeLayout
+                    android:id="@+id/reverseCardSwitchLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_marginTop="10dp"
-                    android:text="@string/hideKnownCards"
-                    android:enabled="false"
-                    android:theme="@style/Theme.MyApplication.PurpleAccent"
-                    tools:ignore="UseSwitchCompatOrMaterialXml" />
-                <Switch
-                    android:id="@+id/notificationSwitch"
-                    android:layout_below="@+id/reverseCardSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/setNotifications"
-                    android:enabled="true"
-                    android:checked="true"
-                    android:theme="@style/Theme.MyApplication.PurpleAccent"
-                    tools:ignore="UseSwitchCompatOrMaterialXml" />
-                <Switch
-                    android:id="@+id/muteSwitch"
-                    android:layout_below="@+id/notificationSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="20dp"
-                    android:text="@string/setMute"
-                    android:checked="true"
-                    android:enabled="true"
-                    android:theme="@style/Theme.MyApplication.PurpleAccent"
-                    tools:ignore="UseSwitchCompatOrMaterialXml" />
+                    android:layout_below="@+id/splitLine">
+                    <TextView
+                        android:id="@+id/reverseCardText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/hideKnownCards"/>
+                    <Switch
+                        android:id="@+id/reverseCardSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignBaseline="@+id/reverseCardText"
+                        android:layout_alignParentEnd="true"
+                        android:enabled="false"
+                        android:theme="@style/Theme.MyApplication.PurpleAccent"
+                        tools:ignore="UseSwitchCompatOrMaterialXml"
+                        android:layout_alignParentRight="true" />
+                </RelativeLayout>
+                <RelativeLayout
+                    android:id="@+id/notificationSwitchLayot"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="10dp"
+                    android:layout_below="@+id/reverseCardSwitchLayout">
+                    <TextView
+                        android:id="@+id/notificationText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/setNotifications"/>
+                    <Switch
+                        android:id="@+id/notificationSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignBaseline="@+id/notificationText"
+                        android:layout_alignParentEnd="true"
+                        android:checked="true"
+                        android:theme="@style/Theme.MyApplication.PurpleAccent"
+                        tools:ignore="UseSwitchCompatOrMaterialXml"
+                        android:layout_alignParentRight="true" />
+                </RelativeLayout>
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="10dp"
+                    android:layout_below="@+id/notificationSwitchLayot">
+                    <TextView
+                        android:id="@+id/muteText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/setMute"/>
+                    <Switch
+                        android:id="@+id/muteSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignBaseline="@+id/muteText"
+                        android:layout_alignParentEnd="true"
+                        android:checked="true"
+                        android:theme="@style/Theme.MyApplication.PurpleAccent"
+                        tools:ignore="UseSwitchCompatOrMaterialXml"
+                        android:layout_alignParentRight="true" />
+                </RelativeLayout>
             </RelativeLayout>
         </ScrollView>
     </com.google.android.material.navigation.NavigationView>
