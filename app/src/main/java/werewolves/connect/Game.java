@@ -1,17 +1,26 @@
 package werewolves.connect;
 
+import android.app.ActivityManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
@@ -19,6 +28,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Game extends Service{
+    private int notificationID = 0;
+    private boolean inForeground = true;
     private final Object clickedLock = new Object();        // to synchronize clicked card moment
     private Boolean isClicked = false;
     private boolean isRunning = false;
@@ -47,7 +58,7 @@ public class Game extends Service{
         this.output = Model.getOutput();
         gameActivity.setStatementLabel(getString( R.string.waitForPlayers ) );
         gameActivity.setNicknameLabel( nickname );
-
+        createNotificationChannel();
         new GameNet().execute();
 
         keepAlive = new Thread( () -> {
@@ -62,6 +73,45 @@ public class Game extends Service{
         } );
         keepAlive.start();
         gameLogic();
+    }
+
+    private void createNotificationChannel(){
+        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ){
+            CharSequence name = getString( R.string.channelName );
+            String description = getString( R.string.channelDescription );
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel( "wakeup", name, importance );
+            channel.setDescription( description );
+            NotificationManager notificationManager = getSystemService( NotificationManager.class );
+            notificationManager.createNotificationChannel( channel );
+        }
+    }
+
+    private void makeNotification( String title, String content ){
+        makeNotification( title, content, true );
+    }
+
+    private void makeNotification( String title, String content, boolean role ){
+        if( inForeground )
+            return;
+        NotificationCompat.Builder builder = new NotificationCompat.Builder( this, "wakeup" )
+                .setSmallIcon( R.drawable.wolfheadwhite )
+                .setContentTitle( title )
+                .setContentText( content )
+                .setPriority( NotificationCompat.PRIORITY_HIGH )
+                .setAutoCancel( true );
+        if( role )
+            builder.setTimeoutAfter( MAX_ROLE_TIME * 1000 );
+        Intent intent = new Intent( this, GameActivity.class );
+        intent.setAction( Intent.ACTION_MAIN );
+        intent.addCategory( Intent.CATEGORY_LAUNCHER );
+        PendingIntent pendingIntent = PendingIntent.getActivity( this, 0, intent, 0 );
+        builder.setContentIntent( pendingIntent );
+        NotificationManagerCompat.from( this ).notify( notificationID++, builder.build() );
+    }
+
+    public void inForeground( boolean visible ){
+        inForeground = visible;
     }
 
     public boolean isRunning(){
@@ -92,6 +142,7 @@ public class Game extends Service{
                 isRunning = true;       // now you shouldn't exit the game
                 gameActivity.setStatementLabel(getString( R.string.waitForCards ) );
                 getCard();
+                makeNotification( getString( R.string.app_name ), getString( R.string.gameBegin ), false );
                 gameActivity.createTableCards();
                 gameActivity.setCardLabelBegin( getString( R.string.yourCardLabel ) + " " + card.split( "_" )[ 0 ] );
                 gameActivity.updateMyCard( card );
@@ -155,6 +206,7 @@ public class Game extends Service{
             while( true ){
                 String msg = read();
                 if( msg.equals( "WakeUp" ) ){
+                    makeNotification( getString( R.string.app_name ), getString( R.string.cityWakeUp ), false );
                     wakeUp();
                     break;
                 }
@@ -162,6 +214,7 @@ public class Game extends Service{
                 gameActivity.setStatementLabel( msgCard + " " + getString( R.string.wakesUp ) );
                 if( msg.equals( card.split( "_" )[ 0 ].toUpperCase() ) || ( msg.equals( "WEREWOLF" ) && card.equals( "Mystic wolf" ) ) ){
                     gameActivity.setStatementLabel( msgCard + " " + getString( R.string.yourTurn ) );
+                    makeNotification( getString( R.string.app_name ), getString( R.string.yourTurn ) );
                     proceedCard( msgCard );
                 }
                 if( msg.equals( "THING" ) )
@@ -169,6 +222,7 @@ public class Game extends Service{
             }
             if( read().equals( UNIQUE_CHAR + "VOTE" ) ){
                 gameActivity.setStatementLabel( getString( R.string.vote ) );
+                makeNotification( getString( R.string.app_name ), getString( R.string.vote ) );
                 while( vote() != 0 );       // Not busy waiting, just repeat voting until it returns 0.
                 isRunning = false;
                 isEnded = true;
@@ -511,6 +565,7 @@ public class Game extends Service{
         }
         String voteResult = read();
         if( voteResult.equals( UNIQUE_CHAR + "VOTE" ) ){      // vote again
+            makeNotification( getString( R.string.app_name ), getString( R.string.voteAgain ) );
             gameActivity.setStatementLabel( getString( R.string.voteAgain ) );
             gameActivity.clearArrows();
             return -1;

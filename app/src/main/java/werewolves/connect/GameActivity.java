@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -17,17 +16,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.AccelerateInterpolator;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -36,7 +30,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -44,8 +37,6 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Vector;
-
-import javax.security.auth.login.LoginException;
 
 public class GameActivity extends AppCompatActivity{
 
@@ -109,6 +100,20 @@ public class GameActivity extends AppCompatActivity{
             isBounded = false;
         }
         super.onDestroy();
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        if( game != null )
+            game.inForeground( true );
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        if( game != null )
+            game.inForeground( false );
     }
 
     public void abort(){

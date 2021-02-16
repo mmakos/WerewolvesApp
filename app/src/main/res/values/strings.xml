@@ -24,6 +24,10 @@
     <string name="seriouslyQuit">Seriously? You will ruin the game! (psst, tap two times to quit)</string>
     <string name="emptyRolesLabel">Here you will see your roles.</string>
     <string name="emptyRoleDesc">Here you will see, what exactly you should do. Now wait until players join, and the host runs the game.</string>
+    <string name="gameBegin">The game has started.</string>
+
+    <string name="channelName">WakeUp</string>
+    <string name="channelDescription">"Wake up and make your role" notifications.</string>
 
     <string name="wakesUp">wakes up</string>
     <string name="yourTurn">wakes up - YOUR TURN</string>

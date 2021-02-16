@@ -25,6 +25,10 @@
     <string name="seriouslyQuit">Naprawdę? Zepsujesz wszystkim grę! (psst, dotknij dwa razy, aby wyjść)</string>
     <string name="emptyRolesLabel">Tutaj zobaczysz wszystkie swoje role.</string>
     <string name="emptyRoleDesc">Tutaj znajdziesz informacje o tym, co dokładnie powinieneś zrobić. Teraz poczekaj, aż pozostali gracze dołączą i host rozpocznie grę.</string>
+    <string name="gameBegin">Gra rozpoczęta.</string>
+
+    <string name="channelName">Budzik</string>
+    <string name="channelDescription">Powiadomienie, gdy nadejdzie twój czas.</string>
 
     <string name="wakesUp">się budzi</string>
     <string name="yourTurn">się budzi - TWÓJ RUCH</string>
