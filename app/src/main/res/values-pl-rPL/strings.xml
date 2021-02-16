@@ -7,6 +7,8 @@
     <string name="yourCardLabel">Twoja karta to</string>
     <string name="yourCard">Ty</string>
     <string name="hideKnownCards">Ukryj znane karty</string>
+    <string name="setMute">Dźwięki</string>
+    <string name="setNotifications">Powiadomienia</string>
     <string name="noSuchGame">Nie znaleziono gry. Upewnij się, że wipsałeś poprawne ID gry.</string>
     <string name="nicknameTaken">Nickname zajęty.</string>
     <string name="somethingWrong">Coś poszło nie tak.</string>

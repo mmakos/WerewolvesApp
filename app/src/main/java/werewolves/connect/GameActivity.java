@@ -60,8 +60,12 @@ public class GameActivity extends AppCompatActivity{
         roleDescLabel = findViewById( R.id.roleDescLabel );
         gameArea = findViewById( R.id.gameArea );
         reverseCardsSwitch = findViewById( R.id.reverseCardSwitch );
+        muteSwitch = findViewById( R.id.muteSwitch );
+        notificationsSwitch = findViewById( R.id.notificationSwitch );
         loadingBar = findViewById( R.id.loadingBar );
         reverseCardsSwitch.setOnCheckedChangeListener( ( buttonView, isChecked ) -> hideShowCardNames( isChecked ) );
+        muteSwitch.setOnCheckedChangeListener( ( buttonView, isChecked ) -> game.mute( !isChecked ) );
+        notificationsSwitch.setOnCheckedChangeListener( ( buttonView, isChecked ) -> game.setNotifications( isChecked ) );
         setConsts();
 
         Intent intent = new Intent(this, Game.class);
@@ -539,6 +543,8 @@ public class GameActivity extends AppCompatActivity{
     private DrawerLayout drawerLayout;
     @SuppressLint( "UseSwitchCompatOrMaterialCode" )
     private Switch reverseCardsSwitch;
+    private Switch muteSwitch;
+    private Switch notificationsSwitch;
     private ProgressBar loadingBar;
     private Button card0, card1, card2;
     private final Vector< Button > playersCards = new Vector<>();

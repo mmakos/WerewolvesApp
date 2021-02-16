@@ -6,6 +6,8 @@
     <string name="yourCardLabel">Your card is </string>
     <string name="yourCard">You</string>
     <string name="hideKnownCards">Hide known cards</string>
+    <string name="setMute">Sounds</string>
+    <string name="setNotifications">Notifications</string>
     <string name="noSuchGame">No such game. Make sure you have correct id.</string>
     <string name="nicknameTaken">Nickname already taken.</string>
     <string name="somethingWrong">Something went wrong.</string>

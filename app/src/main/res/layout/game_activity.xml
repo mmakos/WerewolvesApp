@@ -18,7 +18,8 @@
             android:layout_height="40dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="UseCompoundDrawables">
 
             <ImageView
                 android:id="@+id/menuArrow"
@@ -67,55 +68,85 @@
         android:layout_width="209dp"
         android:layout_height="match_parent"
         android:layout_gravity="start">
-
-        <RelativeLayout
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginLeft="10dp"
-            android:layout_marginTop="10dp"
-            android:layout_marginRight="10dp"
-            android:layout_marginBottom="10dp" >
-
-            <TextView
-                android:id="@+id/nicknameLabel"
+            android:layout_height="match_parent">
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="32dp"
-                android:gravity="center_horizontal"
-                android:text=""
-                android:textAlignment="center"
-                android:textColor="@color/black"
-                android:textSize="20sp" />
-
-            <TextView
-                android:id="@+id/rolesLabel"
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_below="@+id/nicknameLabel"
+                android:layout_marginLeft="10dp"
                 android:layout_marginTop="10dp"
-                android:text="@string/emptyRolesLabel"
-                android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:layout_marginRight="10dp"
+                android:layout_marginBottom="10dp" >
 
-            <TextView
-                android:id="@+id/roleDescLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/rolesLabel"
-                android:layout_marginTop="20dp"
-                android:text="@string/emptyRoleDesc"
-                android:textSize="16sp" />
+                <TextView
+                    android:id="@+id/nicknameLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp"
+                    android:gravity="center_horizontal"
+                    android:text=""
+                    android:textAlignment="center"
+                    android:textColor="@color/black"
+                    android:textSize="20sp" />
 
-            <Switch
-                android:id="@+id/reverseCardSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:layout_marginTop="10dp"
-                android:text="@string/hideKnownCards"
-                android:enabled="false"
-                android:theme="@style/Theme.MyApplication.PurpleAccent"
-                tools:ignore="UseSwitchCompatOrMaterialXml" />
-        </RelativeLayout>
+                <TextView
+                    android:id="@+id/rolesLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/nicknameLabel"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/emptyRolesLabel"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/roleDescLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/rolesLabel"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/emptyRoleDesc"
+                    android:textSize="16sp" />
+                <View
+                    android:id="@+id/splitLine"
+                    android:layout_below="@+id/roleDescLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="2dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@color/black"/>
+                <Switch
+                    android:id="@+id/reverseCardSwitch"
+                    android:layout_below="@+id/splitLine"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/hideKnownCards"
+                    android:enabled="false"
+                    android:theme="@style/Theme.MyApplication.PurpleAccent"
+                    tools:ignore="UseSwitchCompatOrMaterialXml" />
+                <Switch
+                    android:id="@+id/notificationSwitch"
+                    android:layout_below="@+id/reverseCardSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setNotifications"
+                    android:enabled="true"
+                    android:checked="true"
+                    android:theme="@style/Theme.MyApplication.PurpleAccent"
+                    tools:ignore="UseSwitchCompatOrMaterialXml" />
+                <Switch
+                    android:id="@+id/muteSwitch"
+                    android:layout_below="@+id/notificationSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    android:text="@string/setMute"
+                    android:checked="true"
+                    android:enabled="true"
+                    android:theme="@style/Theme.MyApplication.PurpleAccent"
+                    tools:ignore="UseSwitchCompatOrMaterialXml" />
+            </RelativeLayout>
+        </ScrollView>
     </com.google.android.material.navigation.NavigationView>
 
 </androidx.drawerlayout.widget.DrawerLayout>
