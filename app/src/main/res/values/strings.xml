@@ -11,6 +11,7 @@
     <string name="noSuchGame">No such game. Make sure you have correct id.</string>
     <string name="nicknameTaken">Nickname already taken.</string>
     <string name="somethingWrong">Something went wrong.</string>
+    <string name="serverIssue">There\'s been an issue with the server (it\'s probably crashed somewhere). Please, report this issue. You can do it &lt;a href=&quot;https://github.com/mmakos/Werewolves/issues&quot;&gt;here&lt;/a&gt;.</string>
     <string name="cannotConnect">Cannot connect to the server.</string>
     <string name="gameWillStart">Game will start soon. Please don\'t close this window.</string>
     <string name="waitForPlayers">Waiting for other players.</string>

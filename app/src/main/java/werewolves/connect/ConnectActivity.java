@@ -3,7 +3,9 @@ package werewolves.connect;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.Html;
 import android.text.TextWatcher;
+import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -98,7 +100,8 @@ public class ConnectActivity extends AppCompatActivity{
     }
 
     public void info( String info ){
-        infoLabel.setText( info );
+        infoLabel.setText( Html.fromHtml( info ) );
+        infoLabel.setMovementMethod( LinkMovementMethod.getInstance() );
     }
 
     public void connected( boolean connected ){

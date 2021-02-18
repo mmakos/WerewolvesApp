@@ -10,13 +10,14 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
 
 import static werewolves.connect.Game.COM_SPLITTER;
 
 public class Connect implements AsyncResponse{
     private int port = 23000;
-    private String ip = "185.20.175.81";
+    private String ip = "3.124.205.50";
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
@@ -68,10 +69,15 @@ public class Connect implements AsyncResponse{
                 input = new BufferedReader( new InputStreamReader( socket.getInputStream(), Charset.forName( "UTF-8" ) ) );
                 output = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), Charset.forName( "UTF-8" ) ), true );
                 sendToServer( gameID );
-                if( !receive().equals( "GOOD" ) )
+                String response = receive();
+                if( response == null )
+                    return connectActivity.getString( R.string.serverIssue );
+                if( !response.equals( "GOOD" ) )
                     return connectActivity.getString( R.string.noSuchGame );
                 sendMsg( nickname );
                 String nickInfo = receive();
+                if( nickInfo == null )
+                    return connectActivity.getString( R.string.serverIssue );
                 if( nickInfo.equals( "WRONGNICK" ) )
                     return connectActivity.getString( R.string.nicknameTaken );
                 if( !nickInfo.equals( "OK" ) )
@@ -106,9 +112,12 @@ public class Connect implements AsyncResponse{
 
     String receive(){
         try{
-            return input.readLine();
+            socket.setSoTimeout( 5000 );
+            String s = input.readLine();
+            socket.setSoTimeout( 0 );
+            return s;
         }catch( IOException e ){
-            return "";
+            return null;
         }
     }
 

@@ -1,13 +1,10 @@
 package werewolves.connect;
 
-import android.app.ActivityManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.media.MediaParser;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Binder;
@@ -22,7 +19,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
@@ -31,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Game extends Service{
     private boolean isMuted = false;
-    private boolean noNotify = true;
+    private boolean noNotify = false;
     private int notificationID = 0;
     private boolean inForeground = true;
     private final Object clickedLock = new Object();        // to synchronize clicked card moment
@@ -169,7 +165,7 @@ public class Game extends Service{
             while( true ){
                 try{
                     String msg = input.readLine();
-                    if( msg == null ){
+                    if( msg == null || msg.equals( "ABORT" ) ){
                         abort();
                         return null;
                     }
@@ -186,7 +182,7 @@ public class Game extends Service{
 
     private void getPlayers() throws IOException{
         String msg = input.readLine();
-        if( msg == null ){
+        if( msg == null || msg.equals( "ABORT" ) ){
             abort();
             throw new IOException( "Game aborted" );
         }
@@ -196,7 +192,7 @@ public class Game extends Service{
 
     private void getCard() throws IOException{
         card = input.readLine();
-        if( card == null ){
+        if( card == null || card.equals( "ABORT" )){
             abort();
             throw new IOException( "Game aborted" );
         }
@@ -559,6 +555,7 @@ public class Game extends Service{
                         voteLock.notify();
                     }
                     synchronized( clickedLock ){
+                        isClicked = true;
                         clickedLock.notify();
                     }
                     break;

@@ -210,8 +210,6 @@ public class GameActivity extends AppCompatActivity{
     }
 
     private void setConsts(){
-        cardHeight = getPx( cardHeight );
-        cardWidth = getPx( cardWidth );
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics( displayMetrics );
         sceneHeight = displayMetrics.heightPixels;
@@ -222,6 +220,8 @@ public class GameActivity extends AppCompatActivity{
             sceneWidth = t;
         }
         sceneHeight = sceneHeight - getPx( 40 );
+        cardHeight = sceneHeight / 4;
+        cardWidth = ( cardHeight * 72 ) / 100;
     }
 
     //------------- HELP -----------------

@@ -10,9 +10,10 @@
     <string name="setMute">Dźwięki</string>
     <string name="setNotifications">Powiadomienia</string>
     <string name="noSuchGame">Nie znaleziono gry. Upewnij się, że wipsałeś poprawne ID gry.</string>
+    <string name="serverIssue">Wystąpił problem z serwerem (prawdopodobnie się gdzieś zawiesił). Koniecznie zgłoś problem, na przykład &lt;a href=&quot;https://github.com/mmakos/Werewolves/issues&quot;&gt;tutaj&lt;/a&gt;.</string>
     <string name="nicknameTaken">Nickname zajęty.</string>
     <string name="somethingWrong">Coś poszło nie tak.</string>
-    <string name="cannotConnect">NIe można w tej chwili nawiązać połączenia z serwerem.</string>
+    <string name="cannotConnect">Nie można w tej chwili nawiązać połączenia z serwerem.</string>
     <string name="gameWillStart">Gra rozpocznie się niebawem, jak pozostali gracze dołączą. Nie zamykaj już gry.</string>
     <string name="waitForPlayers">Czekam na pozostałych graczy.</string>
     <string name="waitForCards">Czekam na rozdanie kart.</string>
